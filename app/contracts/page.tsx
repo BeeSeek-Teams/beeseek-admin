@@ -1,0 +1,39 @@
+"use client";
+
+import React from "react";
+import { FileText, Construction } from "lucide-react";
+import { AdminHeader } from "@/components/AdminHeader";
+import { AdminText } from "@/components/AdminText";
+
+export default function ContractsPage() {
+  return (
+    <div className="space-y-8">
+      <AdminHeader
+        title="Contract Registry"
+        description="View and manage all platform contracts between clients and agents."
+      />
+
+      <div className="bg-white border border-border/50 rounded-[32px] p-16 flex flex-col items-center justify-center text-center shadow-sm">
+        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mb-6">
+          <Construction size={40} />
+        </div>
+        <AdminText variant="bold" size="xl" className="mb-2">
+          Coming Soon
+        </AdminText>
+        <AdminText color="secondary" size="sm" className="max-w-md leading-relaxed">
+          The contract management system is under development. This page will display all active, completed, and disputed contracts with filtering and export capabilities.
+        </AdminText>
+        <div className="flex items-center gap-4 mt-8">
+          <div className="flex items-center gap-2 px-4 py-2 bg-surface rounded-xl border border-border/50">
+            <FileText size={16} className="text-secondary" />
+            <AdminText size="xs" variant="bold" color="secondary">Contract Viewer</AdminText>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-surface rounded-xl border border-border/50">
+            <FileText size={16} className="text-secondary" />
+            <AdminText size="xs" variant="bold" color="secondary">PDF Export</AdminText>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
