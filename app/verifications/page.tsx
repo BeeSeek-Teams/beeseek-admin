@@ -9,7 +9,17 @@ import {
   AlertCircle,
   ShieldCheck,
   RefreshCcw,
-  Search
+  Search,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Phone,
+  Smartphone,
+  Globe,
+  Calendar,
+  Hash,
+  Mail,
+  Shield
 } from "lucide-react";
 import { AdminHeader } from "@/components/AdminHeader";
 import { AdminText } from "@/components/AdminText";
@@ -18,13 +28,14 @@ import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTab
 import { AdminBadge } from "@/components/AdminBadge";
 import { getPendingVerifications, updateVerificationStatus, PendingVerification } from "@/lib/verifications";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 export default function VerificationsPage() {
   const [verifications, setVerifications] = useState<PendingVerification[]>([]);
   const [filteredVerifications, setFilteredVerifications] = useState<PendingVerification[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchVerifications = async () => {
@@ -166,7 +177,8 @@ export default function VerificationsPage() {
             </AdminTableRow>
           ) : (
             filteredVerifications.map((v) => (
-              <AdminTableRow key={v.id}>
+              <React.Fragment key={v.id}>
+              <AdminTableRow onClick={() => setExpandedId(expandedId === v.id ? null : v.id)}>
                 <AdminTableCell>
                   <AdminText size="xs" color="secondary">
                     {formatDistanceToNow(new Date(v.createdAt), { addSuffix: true })}
@@ -203,15 +215,19 @@ export default function VerificationsPage() {
                       variant="outline" 
                       size="sm" 
                       className="h-8 w-8 p-0"
-                      title="View Details"
+                      title={expandedId === v.id ? "Collapse" : "Expand Details"}
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        setExpandedId(expandedId === v.id ? null : v.id);
+                      }}
                     >
-                      <Eye size={14} />
+                      {expandedId === v.id ? <ChevronUp size={14} /> : <Eye size={14} />}
                     </AdminButton>
                     <AdminButton 
                       variant="primary" 
                       size="sm" 
                       className="h-8 py-0 gap-1.5"
-                      onClick={() => handleUpdateStatus(v.id, 'VERIFIED')}
+                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleUpdateStatus(v.id, 'VERIFIED'); }}
                       disabled={!!processingId}
                     >
                       {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
@@ -221,7 +237,7 @@ export default function VerificationsPage() {
                       variant="secondary" 
                       size="sm" 
                       className="h-8 py-0 gap-1.5"
-                      onClick={() => handleUpdateStatus(v.id, 'REJECTED')}
+                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleUpdateStatus(v.id, 'REJECTED'); }}
                       disabled={!!processingId}
                     >
                       {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <XCircle size={14} />}
@@ -230,6 +246,164 @@ export default function VerificationsPage() {
                   </div>
                 </AdminTableCell>
               </AdminTableRow>
+
+              {/* Expanded Detail Row */}
+              {expandedId === v.id && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-0">
+                    <div className="bg-surface/50 border border-border/30 rounded-2xl p-6 my-3 animate-in slide-in-from-top-2 duration-200">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Identity */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Shield size={16} className="text-primary" />
+                            <AdminText variant="bold" size="sm">Identity</AdminText>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex items-start gap-3">
+                              <Hash size={14} className="text-secondary mt-0.5 shrink-0" />
+                              <div>
+                                <AdminText size="xs" color="secondary">Full NIN</AdminText>
+                                <AdminText variant="bold" size="sm" className="font-mono">{v.ninNumber || 'N/A'}</AdminText>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <User size={14} className="text-secondary mt-0.5 shrink-0" />
+                              <div>
+                                <AdminText size="xs" color="secondary">Full Name</AdminText>
+                                <AdminText variant="bold" size="sm">{v.firstName} {v.lastName}</AdminText>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <Mail size={14} className="text-secondary mt-0.5 shrink-0" />
+                              <div>
+                                <AdminText size="xs" color="secondary">Email</AdminText>
+                                <AdminText size="sm">{v.email}</AdminText>
+                              </div>
+                            </div>
+                            {v.phone && (
+                              <div className="flex items-start gap-3">
+                                <Phone size={14} className="text-secondary mt-0.5 shrink-0" />
+                                <div>
+                                  <AdminText size="xs" color="secondary">Phone</AdminText>
+                                  <AdminText size="sm">{v.phone}</AdminText>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Account Info */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <User size={16} className="text-primary" />
+                            <AdminText variant="bold" size="sm">Account</AdminText>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex items-start gap-3">
+                              <ShieldCheck size={14} className="text-secondary mt-0.5 shrink-0" />
+                              <div>
+                                <AdminText size="xs" color="secondary">Role</AdminText>
+                                <AdminBadge variant={v.role === 'AGENT' ? 'info' : 'secondary'}>{v.role || 'N/A'}</AdminBadge>
+                              </div>
+                            </div>
+                            {v.age && (
+                              <div className="flex items-start gap-3">
+                                <Calendar size={14} className="text-secondary mt-0.5 shrink-0" />
+                                <div>
+                                  <AdminText size="xs" color="secondary">Age</AdminText>
+                                  <AdminText size="sm">{v.age}</AdminText>
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex items-start gap-3">
+                              <Calendar size={14} className="text-secondary mt-0.5 shrink-0" />
+                              <div>
+                                <AdminText size="xs" color="secondary">Submitted</AdminText>
+                                <AdminText size="sm">{format(new Date(v.createdAt), 'PPpp')}</AdminText>
+                              </div>
+                            </div>
+                            {v.lastLoginAt && (
+                              <div className="flex items-start gap-3">
+                                <Clock size={14} className="text-secondary mt-0.5 shrink-0" />
+                                <div>
+                                  <AdminText size="xs" color="secondary">Last Login</AdminText>
+                                  <AdminText size="sm">{format(new Date(v.lastLoginAt), 'PPpp')}</AdminText>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Device Info */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Smartphone size={16} className="text-primary" />
+                            <AdminText variant="bold" size="sm">Device</AdminText>
+                          </div>
+                          <div className="space-y-3">
+                            {v.deviceType && (
+                              <div className="flex items-start gap-3">
+                                <Smartphone size={14} className="text-secondary mt-0.5 shrink-0" />
+                                <div>
+                                  <AdminText size="xs" color="secondary">Type</AdminText>
+                                  <AdminText size="sm">{v.deviceType}</AdminText>
+                                </div>
+                              </div>
+                            )}
+                            {v.deviceModel && (
+                              <div className="flex items-start gap-3">
+                                <Smartphone size={14} className="text-secondary mt-0.5 shrink-0" />
+                                <div>
+                                  <AdminText size="xs" color="secondary">Model</AdminText>
+                                  <AdminText size="sm">{v.deviceModel}</AdminText>
+                                </div>
+                              </div>
+                            )}
+                            {v.lastIpAddress && (
+                              <div className="flex items-start gap-3">
+                                <Globe size={14} className="text-secondary mt-0.5 shrink-0" />
+                                <div>
+                                  <AdminText size="xs" color="secondary">Last IP</AdminText>
+                                  <AdminText size="sm" className="font-mono">{v.lastIpAddress}</AdminText>
+                                </div>
+                              </div>
+                            )}
+                            {!v.deviceType && !v.deviceModel && !v.lastIpAddress && (
+                              <AdminText size="xs" color="secondary">No device info available</AdminText>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Actions */}
+                      <div className="mt-6 pt-4 border-t border-border/30 flex items-center justify-end gap-3">
+                        <AdminButton 
+                          variant="primary" 
+                          size="sm" 
+                          className="gap-1.5"
+                          onClick={() => handleUpdateStatus(v.id, 'VERIFIED')}
+                          disabled={!!processingId}
+                        >
+                          {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                          Approve Verification
+                        </AdminButton>
+                        <AdminButton 
+                          variant="secondary" 
+                          size="sm" 
+                          className="gap-1.5"
+                          onClick={() => handleUpdateStatus(v.id, 'REJECTED')}
+                          disabled={!!processingId}
+                        >
+                          {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <XCircle size={14} />}
+                          Reject Verification
+                        </AdminButton>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
             ))
           )}
         </AdminTable>

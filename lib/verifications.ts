@@ -9,6 +9,13 @@ export interface PendingVerification {
   ninStatus: string;
   createdAt: string;
   profileImage?: string;
+  phone?: string;
+  role?: string;
+  age?: number;
+  deviceType?: string;
+  deviceModel?: string;
+  lastLoginAt?: string;
+  lastIpAddress?: string;
 }
 
 export const getPendingVerifications = async (): Promise<PendingVerification[]> => {
