@@ -19,14 +19,16 @@ import {
   Calendar,
   Hash,
   Mail,
-  Shield
+  Shield,
+  ShieldAlert,
+  ShieldOff
 } from "lucide-react";
 import { AdminHeader } from "@/components/AdminHeader";
 import { AdminText } from "@/components/AdminText";
 import { AdminButton } from "@/components/AdminButton";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
-import { getPendingVerifications, updateVerificationStatus, PendingVerification } from "@/lib/verifications";
+import { getPendingVerifications, updateVerificationStatus, runBackgroundCheck, PendingVerification, BackgroundCheckResult, ScreeningMatch } from "@/lib/verifications";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -36,6 +38,8 @@ export default function VerificationsPage() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [bgCheckResults, setBgCheckResults] = useState<Record<string, BackgroundCheckResult>>({});
+  const [bgCheckLoading, setBgCheckLoading] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchVerifications = async () => {
@@ -67,6 +71,23 @@ export default function VerificationsPage() {
       toast.error("Operation failed");
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleBackgroundCheck = async (userId: string) => {
+    try {
+      setBgCheckLoading(userId);
+      const result = await runBackgroundCheck(userId);
+      setBgCheckResults(prev => ({ ...prev, [userId]: result }));
+      if (result.success) {
+        toast.success(`Background check complete — ${result.nameMatch?.confidence}% name match`);
+      } else {
+        toast.error(`Background check failed: ${result.error}`);
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Background check failed");
+    } finally {
+      setBgCheckLoading(null);
     }
   };
 
@@ -374,6 +395,100 @@ export default function VerificationsPage() {
                             )}
                           </div>
                         </div>
+                      </div>
+
+                      {/* Background Check */}
+                      <div className="mt-6 pt-4 border-t border-border/30">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <Shield size={16} className="text-primary" />
+                            <AdminText variant="bold" size="sm">AML / Criminal Screening</AdminText>
+                          </div>
+                          <AdminButton
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleBackgroundCheck(v.id); }}
+                            disabled={!!bgCheckLoading}
+                          >
+                            {bgCheckLoading === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <Shield size={14} />}
+                            {bgCheckResults[v.id] ? 'Re-run Screening' : 'Run Screening'}
+                          </AdminButton>
+                        </div>
+
+                        {bgCheckResults[v.id] && (
+                          <div className={`rounded-xl border p-4 ${bgCheckResults[v.id].success ? (bgCheckResults[v.id].riskLevel === 'high' ? 'bg-error/5 border-error/20' : bgCheckResults[v.id].riskLevel === 'medium' ? 'bg-warning/5 border-warning/20' : 'bg-success/5 border-success/20') : 'bg-error/5 border-error/20'}`}>
+                            {bgCheckResults[v.id].success ? (
+                              <div className="space-y-4">
+                                {/* Risk Level Header */}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {bgCheckResults[v.id].riskLevel === 'high' ? (
+                                      <ShieldAlert size={16} className="text-error" />
+                                    ) : bgCheckResults[v.id].riskLevel === 'medium' ? (
+                                      <ShieldAlert size={16} className="text-warning" />
+                                    ) : (
+                                      <ShieldCheck size={16} className="text-success" />
+                                    )}
+                                    <AdminText variant="bold" size="sm" className={bgCheckResults[v.id].riskLevel === 'high' ? 'text-error' : bgCheckResults[v.id].riskLevel === 'medium' ? 'text-warning' : 'text-success'}>
+                                      {bgCheckResults[v.id].riskLevel === 'high' ? 'High Risk' : bgCheckResults[v.id].riskLevel === 'medium' ? 'Medium Risk' : 'Low Risk'} — Screening Complete
+                                    </AdminText>
+                                  </div>
+                                  <AdminBadge variant={bgCheckResults[v.id].riskLevel === 'high' ? 'error' : bgCheckResults[v.id].riskLevel === 'medium' ? 'warning' : 'success'}>
+                                    {(bgCheckResults[v.id].totalMatches || 0)} {bgCheckResults[v.id].totalMatches === 1 ? 'Match' : 'Matches'}
+                                  </AdminBadge>
+                                </div>
+
+                                {/* Flags */}
+                                <div className="flex flex-wrap gap-2">
+                                  <AdminBadge variant={bgCheckResults[v.id].isPEP ? 'error' : 'success'}>
+                                    {bgCheckResults[v.id].isPEP ? 'PEP Flagged' : 'Not PEP'}
+                                  </AdminBadge>
+                                  <AdminBadge variant={bgCheckResults[v.id].isSanctioned ? 'error' : 'success'}>
+                                    {bgCheckResults[v.id].isSanctioned ? 'Sanctioned' : 'No Sanctions'}
+                                  </AdminBadge>
+                                  <AdminBadge variant={bgCheckResults[v.id].isWatchlisted ? 'error' : 'success'}>
+                                    {bgCheckResults[v.id].isWatchlisted ? 'Watchlisted' : 'Not Watchlisted'}
+                                  </AdminBadge>
+                                </div>
+
+                                {/* Matches */}
+                                {bgCheckResults[v.id].matches && bgCheckResults[v.id].matches!.length > 0 && (
+                                  <div className="space-y-2">
+                                    <AdminText variant="bold" size="xs" color="secondary">Matches Found</AdminText>
+                                    {bgCheckResults[v.id].matches!.map((match, idx) => (
+                                      <div key={idx} className="rounded-lg border border-border/20 p-3 bg-background/50">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <AdminText variant="bold" size="sm">{match.name}</AdminText>
+                                          <AdminBadge variant={match.matchScore >= 80 ? 'error' : match.matchScore >= 50 ? 'warning' : 'secondary'}>
+                                            {match.matchScore}% match
+                                          </AdminBadge>
+                                        </div>
+                                        <div className="flex gap-2 text-xs">
+                                          <AdminBadge variant="secondary">{match.category}</AdminBadge>
+                                          <AdminText size="xs" color="secondary">Source: {match.source}</AdminText>
+                                        </div>
+                                        {match.details && <AdminText size="xs" color="secondary" className="mt-1">{match.details}</AdminText>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {bgCheckResults[v.id].reportId && (
+                                  <AdminText size="xs" color="secondary">Report ID: {bgCheckResults[v.id].reportId}</AdminText>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3">
+                                <AlertCircle size={16} className="text-error shrink-0" />
+                                <div>
+                                  <AdminText variant="bold" size="sm" className="text-error">Screening Failed</AdminText>
+                                  <AdminText size="xs" color="secondary">{bgCheckResults[v.id].error || 'Unknown error'}</AdminText>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Quick Actions */}

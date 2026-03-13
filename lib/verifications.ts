@@ -18,8 +18,33 @@ export interface PendingVerification {
   lastIpAddress?: string;
 }
 
+export interface ScreeningMatch {
+  name: string;
+  matchScore: number;
+  category: string;
+  source: string;
+  details?: string;
+}
+
+export interface BackgroundCheckResult {
+  success: boolean;
+  riskLevel?: 'low' | 'medium' | 'high' | 'unknown';
+  isPEP?: boolean;
+  isSanctioned?: boolean;
+  isWatchlisted?: boolean;
+  totalMatches?: number;
+  matches?: ScreeningMatch[];
+  reportId?: string;
+  error?: string;
+}
+
 export const getPendingVerifications = async (): Promise<PendingVerification[]> => {
   const response = await api.get('/users/verifications/pending');
+  return response.data;
+};
+
+export const runBackgroundCheck = async (userId: string): Promise<BackgroundCheckResult> => {
+  const response = await api.post(`/users/verifications/${userId}/background-check`);
   return response.data;
 };
 
