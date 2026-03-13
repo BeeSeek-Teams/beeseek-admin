@@ -80,7 +80,7 @@ export default function VerificationsPage() {
       const result = await runBackgroundCheck(userId);
       setBgCheckResults(prev => ({ ...prev, [userId]: result }));
       if (result.success) {
-        toast.success(`Background check complete — ${result.nameMatch?.confidence}% name match`);
+        toast.success(`Screening complete — Risk: ${result.riskLevel || 'unknown'}, ${result.totalMatches || 0} matches`);
       } else {
         toast.error(`Background check failed: ${result.error}`);
       }
