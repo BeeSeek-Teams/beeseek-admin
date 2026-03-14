@@ -21,6 +21,8 @@ export interface Ticket {
 export interface TicketMessage {
   id: string;
   text: string;
+  type?: string;
+  mediaUrl?: string;
   isFromSupport: boolean;
   createdAt: string;
   sender: {

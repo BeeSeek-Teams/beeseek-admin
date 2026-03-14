@@ -252,7 +252,18 @@ export default function SupportPage() {
                             ? "bg-primary text-white rounded-tr-none" 
                             : "bg-white border border-border/50 text-foreground rounded-tl-none"
                         }`}>
-                          <AdminText size="sm" className={`leading-relaxed ${isMine ? "!text-white" : ""}`}>{msg.text}</AdminText>
+                          {msg.type === 'image' && msg.mediaUrl ? (
+                            <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer">
+                              <img src={msg.mediaUrl} alt="Shared image" className="max-w-[280px] rounded-2xl object-cover cursor-pointer hover:opacity-90 transition-opacity" />
+                            </a>
+                          ) : msg.type === 'audio' && msg.mediaUrl ? (
+                            <div className="flex flex-col gap-1">
+                              <audio controls src={msg.mediaUrl} className="max-w-[260px] h-10" preload="metadata" />
+                              <AdminText size="xs" className={isMine ? "!text-white/70" : "text-secondary"}>Voice Message</AdminText>
+                            </div>
+                          ) : (
+                            <AdminText size="sm" className={`leading-relaxed ${isMine ? "!text-white" : ""}`}>{msg.text}</AdminText>
+                          )}
                         </div>
                         <AdminText size="xs" color="secondary" className={`mt-1.5 opacity-60 ${isMine ? "text-right" : "text-left"}`}>
                           {format(new Date(msg.createdAt), "h:mm a")}
