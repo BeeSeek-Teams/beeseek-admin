@@ -31,7 +31,7 @@ export interface TicketMessage {
 
 export const getAllTickets = async (): Promise<Ticket[]> => {
   const response = await api.get('/support/admin/tickets');
-  return response.data;
+  return response.data?.items || [];
 };
 
 export const getTicketDetails = async (id: string): Promise<Ticket> => {
