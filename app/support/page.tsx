@@ -249,7 +249,7 @@ export default function SupportPage() {
                             ? "bg-primary text-white rounded-tr-none" 
                             : "bg-white border border-border/50 text-foreground rounded-tl-none"
                         }`}>
-                          <AdminText size="sm" className="leading-relaxed">{msg.text}</AdminText>
+                          <AdminText size="sm" className={`leading-relaxed ${isMine ? "!text-white" : ""}`}>{msg.text}</AdminText>
                         </div>
                         <AdminText size="xs" color="secondary" className={`mt-1.5 opacity-60 ${isMine ? "text-right" : "text-left"}`}>
                           {format(new Date(msg.createdAt), "h:mm a")}
