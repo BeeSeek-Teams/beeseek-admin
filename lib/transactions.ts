@@ -43,6 +43,7 @@ export interface TransactionStats {
     totalServiceFees: string;
     totalCommissions: string;
   };
+  successRate: number;
 }
 
 export interface TransactionListResponse {

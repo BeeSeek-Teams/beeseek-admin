@@ -23,9 +23,10 @@ export interface MapMarker {
   id: string;
   lat: number;
   lng: number;
-  type: 'bee' | 'user';
+  type: 'bee' | 'agent' | 'client';
   label: string;
   sublabel: string;
+  color: string;
 }
 
 export const getDashboardStats = async (): Promise<DashboardStats> => {

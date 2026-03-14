@@ -239,7 +239,7 @@ export default function TransactionsPage() {
         />
         <StatCard 
           title="Success Rate" 
-          value="—" 
+          value={stats ? `${stats.successRate}%` : "—"} 
           label="Transaction completion efficiency"
           icon={CheckCircle2}
         />

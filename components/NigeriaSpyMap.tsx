@@ -106,7 +106,6 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
         {/* Markers */}
         {markers.map((marker) => {
           const { x, y } = project(marker.lat, marker.lng);
-          const isBee = marker.type === 'bee';
           
           return (
             <g 
@@ -120,7 +119,7 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
                 cx={x}
                 cy={y}
                 r="1.5"
-                fill={isBee ? "rgba(255,204,0,0.4)" : "rgba(0,112,243,0.4)"}
+                fill={`${marker.color}66`}
                 animate={{
                   r: [1.2, 3.0, 1.2],
                   opacity: [0.5, 0.1, 0.5]
@@ -137,7 +136,7 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
                 cx={x}
                 cy={y}
                 r="0.8"
-                fill={isBee ? "#FFCC00" : "#0070F3"}
+                fill={marker.color}
                 filter="url(#glow)"
                 className="transition-all duration-300 group-hover:r-2"
               />
@@ -163,9 +162,11 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
             <div className="bg-white border border-border/50 backdrop-blur-md p-4 rounded-2xl shadow-xl min-w-[200px]">
               <div className="flex items-center justify-between mb-2">
                 <div className={`px-2 py-0.5 rounded-full text-[9px] font-mono tracking-tighter uppercase ${
-                  hoveredMarker.type === 'bee' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-info/10 text-info border border-info/20'
+                  hoveredMarker.type === 'bee' ? 'bg-orange-100/50 text-orange-700 border border-orange-300/50' : 
+                  hoveredMarker.type === 'agent' ? 'bg-teal-100/50 text-teal-700 border border-teal-300/50' : 
+                  'bg-blue-100/50 text-blue-700 border border-blue-300/50'
                 }`}>
-                  {hoveredMarker.type}
+                  {hoveredMarker.type === 'bee' ? 'Service Bee' : hoveredMarker.type === 'agent' ? 'Agent' : 'Client'}
                 </div>
                 <span className="text-[10px] font-mono text-slate-400">ID: {hoveredMarker.id.slice(0, 8)}</span>
               </div>
@@ -195,12 +196,16 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
       {/* Grid Legend */}
       <div className="absolute top-8 right-8 flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-sm" />
+          <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: '#FF6B35' }} />
           <span className="text-[10px] font-mono text-slate-500 tracking-wider">Service_Bees</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-info shadow-sm" />
-          <span className="text-[10px] font-mono text-slate-500 tracking-wider">User_Nodes</span>
+          <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: '#4ECDC4' }} />
+          <span className="text-[10px] font-mono text-slate-500 tracking-wider">Agents</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: '#1E90FF' }} />
+          <span className="text-[10px] font-mono text-slate-500 tracking-wider">Clients</span>
         </div>
       </div>
     </div>
