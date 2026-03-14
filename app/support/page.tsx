@@ -50,6 +50,18 @@ export default function SupportPage() {
     fetchTickets();
   }, []);
 
+  // Listen for new tickets in real-time
+  useEffect(() => {
+    const socket = getSocket();
+    socket.on('newTicket', (ticket: Ticket) => {
+      setTickets((prev) => [ticket, ...prev]);
+    });
+
+    return () => {
+      socket.off('newTicket');
+    };
+  }, []);
+
   useEffect(() => {
     if (!selectedTicket) return;
 
