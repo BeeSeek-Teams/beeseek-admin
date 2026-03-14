@@ -19,24 +19,29 @@ import { AdminButton } from "@/components/AdminButton";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getDashboardStats, DashboardStats } from "@/lib/analytics";
 import { getTransactionStats, TransactionStats } from "@/lib/transactions";
+import { getSupportStats, SupportStats } from "@/lib/support";
 import { toast } from "sonner";
+import { MessageSquare } from "lucide-react";
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const [dashboardStats, setDashboardStats] = React.useState<DashboardStats | null>(null);
   const [txStats, setTxStats] = React.useState<TransactionStats | null>(null);
+  const [supportStats, setSupportStats] = React.useState<SupportStats | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const [dashboard, transactions] = await Promise.all([
+        const [dashboard, transactions, support] = await Promise.all([
           getDashboardStats(),
           getTransactionStats(),
+          getSupportStats(),
         ]);
         setDashboardStats(dashboard);
         setTxStats(transactions);
+        setSupportStats(support);
       } catch (err) {
         toast.error("Failed to fetch dashboard statistics");
       } finally {
@@ -118,6 +123,42 @@ export default function DashboardPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Support Tickets Overview */}
+      <div className="bg-background border border-border rounded-3xl p-8 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+              <MessageSquare size={20} />
+            </div>
+            <div>
+              <AdminText variant="bold" size="lg">Support Tickets</AdminText>
+              <AdminText size="xs" color="secondary">Live ticket overview</AdminText>
+            </div>
+          </div>
+          <AdminButton variant="outline" size="sm" onClick={() => window.location.href = '/support'}>
+            View All
+          </AdminButton>
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <AdminText size="xs" color="secondary" variant="bold">Total</AdminText>
+            <AdminText size="lg" variant="bold" className="mt-2">{supportStats?.total || 0}</AdminText>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <AdminText size="xs" color="secondary" variant="bold">Open</AdminText>
+            <AdminText size="lg" variant="bold" className="mt-2 text-amber-600">{supportStats?.open || 0}</AdminText>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <AdminText size="xs" color="secondary" variant="bold">In Progress</AdminText>
+            <AdminText size="lg" variant="bold" className="mt-2 text-blue-600">{supportStats?.inProgress || 0}</AdminText>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <AdminText size="xs" color="secondary" variant="bold">Resolved</AdminText>
+            <AdminText size="lg" variant="bold" className="mt-2 text-emerald-600">{supportStats?.resolved || 0}</AdminText>
+          </div>
+        </div>
       </div>
 
       {/* Secondary Analytics */}

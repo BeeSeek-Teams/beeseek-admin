@@ -7,6 +7,7 @@ export interface Ticket {
   description: string;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   evidence: string[];
+  assignedAdminId?: string;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -52,4 +53,22 @@ export const resolveTicket = async (id: string): Promise<Ticket> => {
 export const sendSupportMessage = async (ticketId: string, text: string): Promise<TicketMessage> => {
   const response = await api.post(`/support/admin/tickets/${ticketId}/messages`, { text });
   return response.data;
+};
+export interface SupportStats {
+  total: number;
+  open: number;
+  inProgress: number;
+  resolved: number;
+}
+
+export const getSupportStats = async (): Promise<SupportStats> => {
+  const response = await api.get('/support/admin/tickets');
+  const { items = [] } = response.data || {};
+  
+  return {
+    total: items.length,
+    open: items.filter((t: Ticket) => t.status === 'OPEN').length,
+    inProgress: items.filter((t: Ticket) => t.status === 'IN_PROGRESS').length,
+    resolved: items.filter((t: Ticket) => t.status === 'RESOLVED').length,
+  };
 };

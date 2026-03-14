@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { 
   MessageSquare, 
   Search, 
-  MoreVertical, 
   Send,
   User,
   Clock,
@@ -235,9 +234,6 @@ export default function SupportPage() {
                   ) : (
                     <AdminBadge variant="success">RESOLVED</AdminBadge>
                   )}
-                  <AdminButton variant="ghost" size="icon" className="h-9 w-9 rounded-xl">
-                    <MoreVertical size={20} />
-                  </AdminButton>
                 </div>
               </div>
 
@@ -269,13 +265,13 @@ export default function SupportPage() {
               <div className="p-6 border-t border-border/40 bg-white">
                 <div className="relative group">
                   <AdminInput 
-                    placeholder={selectedTicket.status === 'RESOLVED' ? "This ticket is resolved." : "Type your response to the user..."} 
+                    placeholder={selectedTicket.status === 'RESOLVED' ? "This ticket is resolved." : selectedTicket.assignedAdminId ? "Type your response to the user..." : "Claim the ticket to respond."} 
                     className="pr-24 h-14 bg-surface/50 border-none focus:ring-2 ring-primary/20 rounded-2xl transition-all"
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
-                    disabled={selectedTicket.status === 'RESOLVED' || sending}
+                    disabled={selectedTicket.status === 'RESOLVED' || !selectedTicket.assignedAdminId || sending}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (e.key === 'Enter' && !e.shiftKey && selectedTicket.assignedAdminId) {
                         e.preventDefault();
                         handleSendMessage();
                       }
@@ -285,9 +281,9 @@ export default function SupportPage() {
                     <AdminButton 
                       size="sm" 
                       onClick={handleSendMessage}
-                      disabled={!messageInput.trim() || sending || selectedTicket.status === 'RESOLVED'}
+                      disabled={!messageInput.trim() || sending || selectedTicket.status === 'RESOLVED' || !selectedTicket.assignedAdminId}
                       className={`gap-2 h-10 px-6 rounded-xl shadow-lg transition-all ${
-                        messageInput.trim() ? "translate-x-0 opacity-100" : "translate-x-2 opacity-50"
+                        messageInput.trim() && selectedTicket.assignedAdminId ? "translate-x-0 opacity-100" : "translate-x-2 opacity-50"
                       }`}
                     >
                       {sending ? <RefreshCcw size={16} className="animate-spin" /> : <Send size={16} />}
