@@ -79,7 +79,10 @@ export default function SupportPage() {
     socket.emit('joinTicket', selectedTicket.id);
 
     socket.on('newSupportMessage', (message: TicketMessage) => {
-      setMessages((prev) => [...prev, message]);
+      setMessages((prev) => {
+        if (prev.some(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
     });
 
     return () => {
