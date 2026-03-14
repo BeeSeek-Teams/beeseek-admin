@@ -85,9 +85,17 @@ export default function SupportPage() {
       });
     });
 
+    socket.on('ticketStatusChanged', (data) => {
+      setSelectedTicket((prev) => {
+        if (!prev) return prev;
+        return { ...prev, status: data.status };
+      });
+    });
+
     return () => {
       socket.emit('leaveTicket', selectedTicket.id);
       socket.off('newSupportMessage');
+      socket.off('ticketStatusChanged');
     };
   }, [selectedTicket?.id]);
 
