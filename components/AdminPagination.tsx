@@ -60,7 +60,7 @@ export const AdminPagination: React.FC<AdminPaginationProps> = ({
         <span className="font-bold text-primary">{totalItems}</span> entities
       </AdminText>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap justify-center items-center gap-2">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}

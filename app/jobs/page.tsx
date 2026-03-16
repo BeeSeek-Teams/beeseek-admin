@@ -139,7 +139,7 @@ export default function JobsPage() {
 
       {/* Filter Bar */}
       <div className="bg-white border border-border/50 rounded-[32px] p-4 flex flex-wrap items-center gap-4 shadow-sm">
-        <div className="relative flex-1 min-w-[300px]">
+        <div className="relative flex-1 min-w-[200px] md:min-w-[300px]">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-900" size={18} />
           <AdminInput
             placeholder="Search by contract details, agent or client name..."

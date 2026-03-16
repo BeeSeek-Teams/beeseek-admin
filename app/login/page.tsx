@@ -49,8 +49,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
-      <div className="w-full max-w-md bg-background rounded-[32px] shadow-2xl p-12 border border-border/60">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-4 py-8">
+      <div className="w-full max-w-md bg-background rounded-[32px] shadow-2xl p-6 md:p-12 border border-border/60">
         <div className="flex flex-col items-center mb-10">
           <AdminText variant="bold" size="3xl">BeeSeek Admin</AdminText>
           <AdminText color="secondary" size="sm" className="mt-2">Sign in to manage the hive</AdminText>

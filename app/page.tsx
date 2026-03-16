@@ -141,7 +141,7 @@ export default function DashboardPage() {
             View All
           </AdminButton>
         </div>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
             <AdminText size="xs" color="secondary" variant="bold">Total</AdminText>
             <AdminText size="lg" variant="bold" className="mt-2">{supportStats?.total || 0}</AdminText>

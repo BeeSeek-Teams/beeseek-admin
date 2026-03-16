@@ -57,10 +57,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="flex flex-col md:flex-row min-h-screen bg-surface">
       <Sidebar />
-      <main className="flex-1 p-10 overflow-auto">
-        <div className="max-w-[1400px] mx-auto">
+      <main className="flex-1 p-4 md:p-10 w-full max-w-[100vw] overflow-x-hidden">
+        <div className="max-w-[1400px] mx-auto pt-14 md:pt-0">
           {children}
         </div>
       </main>

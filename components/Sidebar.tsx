@@ -19,14 +19,16 @@ import {
   ClipboardList,
   Bell,
   Activity,
-  ShieldAlert
+  ShieldAlert,
+  Menu,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminText } from "./AdminText";
 import { useAuthStore } from "@/store/useAuthStore";
 import { AdminBadge } from "./AdminBadge";
 import { AdminConsentModal } from "./AdminConsentModal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const menuItems = [
   { 
@@ -120,22 +122,53 @@ export const Sidebar = () => {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
 
   const filteredMenuItems = menuItems.filter(item => 
     item.roles.includes(user?.role as string)
   );
 
   return (
-    <div className="w-72 h-screen bg-background border-r border-border/50 flex flex-col sticky top-0 z-50">
-      {/* Logo Section */}
-      <div className="p-8 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div>
-            <AdminText variant="bold" size="lg" className="leading-tight">BeeSeek</AdminText>
-            <AdminBadge variant="primary" className="mt-0.5 px-1 py-0 text-[8px]">Proprietary</AdminBadge>
+    <>
+      <button 
+        onClick={() => setIsMobileOpen(true)}
+        className="md:hidden fixed top-4 right-4 z-[40] p-2 bg-background border border-border/50 rounded-xl shadow-sm text-foreground flex items-center justify-center h-10 w-10"
+      >
+        <Menu size={20} />
+      </button>
+
+      {/* Mobile Backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-[50] backdrop-blur-sm"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div className={cn(
+        "w-72 h-[100dvh] bg-background border-r border-border/50 flex flex-col fixed md:sticky top-0 z-[60] transition-transform duration-300 md:translate-x-0 left-0",
+        isMobileOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        {/* Logo Section */}
+        <div className="p-8 border-b border-border/50 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div>
+              <AdminText variant="bold" size="lg" className="leading-tight">BeeSeek</AdminText>
+              <AdminBadge variant="primary" className="mt-0.5 px-1 py-0 text-[8px]">Proprietary</AdminBadge>
+            </div>
           </div>
+          <button 
+            onClick={() => setIsMobileOpen(false)}
+            className="md:hidden p-2 -mr-2 text-muted hover:text-foreground"
+          >
+            <X size={20} />
+          </button>
         </div>
-      </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
@@ -205,6 +238,7 @@ export const Sidebar = () => {
         variant="danger"
       />
     </div>
+    </>
   );
 };
 
