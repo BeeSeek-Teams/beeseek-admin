@@ -11,7 +11,8 @@ import {
   ExternalLink,
   Trash2,
   CheckCircle2,
-  MoreHorizontal
+  MoreHorizontal,
+  Copy
 } from "lucide-react";
 import { AdminHeader } from "@/components/AdminHeader";
 import { AdminText } from "@/components/AdminText";
@@ -313,13 +314,31 @@ export default function IntegrityPage() {
                 fraudLogs.map((log) => (
                   <AdminTableRow key={log.id}>
                     <AdminTableCell>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-0.5">
                         <AdminText size="sm" variant="bold">{log.attemptedBy.firstName} {log.attemptedBy.lastName}</AdminText>
                         <AdminText size="xs" color="secondary" className="uppercase tracking-tighter text-[10px] font-bold">{log.attemptedRole || "—"}</AdminText>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(log.attemptedById); toast.success("User ID copied"); }}
+                          className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-primary transition-colors w-fit mt-0.5"
+                          title={log.attemptedById}
+                        >
+                          <Copy size={9} />
+                          <span className="font-mono">{log.attemptedById.slice(0, 8)}</span>
+                        </button>
                       </div>
                     </AdminTableCell>
                     <AdminTableCell>
-                      <AdminText size="sm" variant="bold">{log.targetUser.firstName} {log.targetUser.lastName}</AdminText>
+                      <div className="flex flex-col gap-0.5">
+                        <AdminText size="sm" variant="bold">{log.targetUser.firstName} {log.targetUser.lastName}</AdminText>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(log.targetUserId); toast.success("User ID copied"); }}
+                          className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-primary transition-colors w-fit mt-0.5"
+                          title={log.targetUserId}
+                        >
+                          <Copy size={9} />
+                          <span className="font-mono">{log.targetUserId.slice(0, 8)}</span>
+                        </button>
+                      </div>
                     </AdminTableCell>
                     <AdminTableCell className="max-w-xs">
                       <div className="flex flex-col gap-1">
