@@ -110,32 +110,33 @@ export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user
             className="relative w-full max-w-2xl h-full bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col border border-border/50"
           >
             {/* Header */}
-            <div className="p-8 border-b border-border/40 flex justify-between items-start">
-              <div className="flex items-center gap-6">
-                <div className="w-20 h-20 rounded-3xl bg-surface border border-border/20 flex items-center justify-center text-primary overflow-hidden shadow-inner">
+            <div className="p-4 md:p-8 border-b border-border/40 flex justify-between items-start gap-3">
+              <div className="flex items-center gap-3 md:gap-6 min-w-0">
+                <div className="w-14 h-14 md:w-20 md:h-20 rounded-2xl md:rounded-3xl bg-surface border border-border/20 flex items-center justify-center text-primary overflow-hidden shadow-inner shrink-0">
                   {user.profileImage ? (
                     <img src={user.profileImage} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <UserIcon size={40} />
+                    <UserIcon size={32} className="md:hidden" />
                   )}
+                  {!user.profileImage && <UserIcon size={40} className="hidden md:block" />}
                 </div>
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <AdminText variant="bold" size="xl">{user.firstName} {user.lastName}</AdminText>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 md:gap-3 mb-1 flex-wrap">
+                    <AdminText variant="bold" size="lg" className="md:text-xl truncate">{user.firstName} {user.lastName}</AdminText>
                     <AdminBadge variant={user.role === 'AGENT' ? 'primary' : 'info'}>{user.role}</AdminBadge>
                   </div>
                   <AdminText color="secondary" size="xs" className="font-mono">UUID: {user.id}</AdminText>
                 </div>
               </div>
-              <button onClick={onClose} className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-secondary hover:text-primary transition-colors">
+              <button onClick={onClose} className="w-10 h-10 rounded-full bg-surface flex items-center justify-center text-secondary hover:text-primary transition-colors shrink-0">
                 <X size={20} />
               </button>
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 md:space-y-10 custom-scrollbar">
               {/* Core Information Grid */}
-              <section className="grid grid-cols-2 gap-8">
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-4">
                   <AdminText variant="bold" size="xs" color="secondary" className="uppercase tracking-widest pl-1">Primary Contact</AdminText>
                   <div className="bg-surface rounded-2xl p-4 space-y-4">
@@ -178,7 +179,7 @@ export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user
               </section>
 
               {/* Identity & Financials */}
-              <section className="grid grid-cols-2 gap-8">
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-4">
                   <AdminText variant="bold" size="xs" color="secondary" className="uppercase tracking-widest pl-1">Identity Trust</AdminText>
                   <div className="bg-surface rounded-2xl p-4 space-y-3">
@@ -241,7 +242,7 @@ export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user
                   </div>
                   
                   {user.bees && user.bees.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {user.bees.map((bee: any) => (
                         <div key={bee.id} className="bg-white border border-border/40 rounded-2xl p-4 shadow-sm hover:border-primary/50 transition-colors group relative">
                           <button 
@@ -274,7 +275,7 @@ export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user
             </div>
 
             {/* Footer Actions */}
-            <div className="p-8 border-t border-border/40 bg-surface flex gap-4">
+            <div className="p-4 md:p-8 border-t border-border/40 bg-surface flex flex-col sm:flex-row gap-3 sm:gap-4">
               <AdminButton 
                 variant="outline" 
                 fullWidth 

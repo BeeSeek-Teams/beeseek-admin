@@ -154,7 +154,7 @@ export default function UsersPage() {
             icon={<Search size={18} />}
           />
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <AdminButton 
             variant="outline" 
             size="sm" 
@@ -168,19 +168,19 @@ export default function UsersPage() {
           <div className="flex border border-border/50 rounded-xl overflow-hidden bg-surface">
             <button 
               onClick={() => handleRoleFilter("ALL")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors ${roleFilter === 'ALL' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
+              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors ${roleFilter === 'ALL' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
             >
               All
             </button>
             <button 
               onClick={() => handleRoleFilter("CLIENT")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${roleFilter === 'CLIENT' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
+              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${roleFilter === 'CLIENT' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
             >
               Clients
             </button>
             <button 
               onClick={() => handleRoleFilter("AGENT")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${roleFilter === 'AGENT' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
+              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${roleFilter === 'AGENT' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
             >
               Agents
             </button>
@@ -189,20 +189,20 @@ export default function UsersPage() {
           <div className="flex border border-border/50 rounded-xl overflow-hidden bg-surface">
             <button 
               onClick={() => handleNinFilter("ALL")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors ${ninStatusFilter === 'ALL' ? 'bg-black text-white' : 'text-secondary hover:bg-white'}`}
+              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors ${ninStatusFilter === 'ALL' ? 'bg-black text-white' : 'text-secondary hover:bg-white'}`}
             >
               Any NIN
             </button>
             <button 
               onClick={() => handleNinFilter("NOT_SUBMITTED")}
               title="Users without NIN submitted"
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${ninStatusFilter === 'NOT_SUBMITTED' ? 'bg-error text-white' : 'text-secondary hover:bg-white'}`}
+              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${ninStatusFilter === 'NOT_SUBMITTED' ? 'bg-error text-white' : 'text-secondary hover:bg-white'}`}
             >
               Missing NIN
             </button>
             <button 
               onClick={() => handleNinFilter("VERIFIED")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${ninStatusFilter === 'VERIFIED' ? 'bg-success text-white' : 'text-secondary hover:bg-white'}`}
+              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${ninStatusFilter === 'VERIFIED' ? 'bg-success text-white' : 'text-secondary hover:bg-white'}`}
             >
               Verified
             </button>

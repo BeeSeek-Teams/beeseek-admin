@@ -194,7 +194,7 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
       </AnimatePresence>
 
       {/* Grid Legend */}
-      <div className="absolute top-8 right-8 flex flex-col gap-4">
+      <div className="absolute top-4 right-4 md:top-8 md:right-8 flex flex-col gap-2 md:gap-4 bg-white/80 md:bg-transparent p-2 md:p-0 rounded-xl">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: '#FF6B35' }} />
           <span className="text-[10px] font-mono text-slate-500 tracking-wider">Service_Bees</span>

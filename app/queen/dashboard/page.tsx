@@ -115,7 +115,7 @@ export default function QueenDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#010816] p-10 selection:bg-primary/20">
+    <div className="min-h-screen bg-[#010816] p-4 md:p-6 lg:p-10 selection:bg-primary/20">
       {/* Notifications Layer */}
       <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 w-80">
         {alerts.map(alert => (
@@ -129,7 +129,7 @@ export default function QueenDashboard() {
       </div>
 
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
                 <ShieldCheck size={16} className="text-white" />
@@ -237,7 +237,7 @@ export default function QueenDashboard() {
               </button>
             </div>
             <form onSubmit={handleCreate} className="p-10 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <AdminInput 
                     label="First Name" 
                     labelClassName="text-white"

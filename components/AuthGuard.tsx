@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Loader2 } from "lucide-react";
+import { Loader2, Menu } from "lucide-react";
 import { AdminText } from "./AdminText";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -12,6 +12,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, accessToken, _hasHydrated, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/forgot-password") || pathname?.startsWith("/reset-password") || pathname?.startsWith("/queen/login");
   const isQueenPage = pathname?.startsWith("/queen");
@@ -58,12 +59,24 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-surface">
-      <Sidebar />
-      <main className="flex-1 p-10 overflow-auto">
-        <div className="max-w-[1400px] mx-auto">
-          {children}
+      <Sidebar mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
+      {/* Mobile top bar with hamburger */}
+      <div className="flex-1 flex flex-col overflow-auto">
+        <div className="lg:hidden sticky top-0 z-50 flex items-center gap-3 px-4 py-3 bg-background border-b border-border/50">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-secondary hover:text-primary transition-colors"
+          >
+            <Menu size={22} />
+          </button>
+          <AdminText variant="bold" size="sm" className="text-secondary">BeeSeek Admin</AdminText>
         </div>
-      </main>
+        <main className="flex-1 p-4 md:p-6 lg:p-10">
+          <div className="max-w-[1400px] mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

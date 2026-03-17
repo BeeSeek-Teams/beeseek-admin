@@ -142,7 +142,7 @@ export default function SupportPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col gap-6">
+    <div className="h-[calc(100vh-140px)] lg:h-[calc(100vh-140px)] flex flex-col gap-4 lg:gap-6">
       <AdminHeader 
         title="Support & Communications" 
         description="Claim tickets and engage in real-time communication with users."
@@ -154,9 +154,9 @@ export default function SupportPage() {
         }
       />
 
-      <div className="flex-1 flex gap-6 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 overflow-hidden">
         {/* Tickets List */}
-        <div className="w-1/3 flex flex-col gap-4">
+        <div className="w-full lg:w-1/3 flex flex-col gap-4 max-h-[40vh] lg:max-h-none">
           <AdminInput 
             placeholder="Search tickets..." 
             icon={<Search size={18} />}
@@ -213,7 +213,7 @@ export default function SupportPage() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 bg-white border border-border/50 rounded-[32px] flex flex-col overflow-hidden shadow-xl">
+        <div className="flex-1 min-h-[300px] bg-white border border-border/50 rounded-[24px] lg:rounded-[32px] flex flex-col overflow-hidden shadow-xl">
           {selectedTicket ? (
             <>
               {/* Chat Header */}

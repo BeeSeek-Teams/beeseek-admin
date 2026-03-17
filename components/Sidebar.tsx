@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -19,14 +19,14 @@ import {
   ClipboardList,
   Bell,
   Activity,
-  ShieldAlert
+  ShieldAlert,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminText } from "./AdminText";
 import { useAuthStore } from "@/store/useAuthStore";
 import { AdminBadge } from "./AdminBadge";
 import { AdminConsentModal } from "./AdminConsentModal";
-import { useState } from "react";
 
 const menuItems = [
   { 
@@ -115,7 +115,12 @@ const menuItems = [
   },
 ];
 
-export const Sidebar = () => {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export const Sidebar = ({ mobileOpen, onMobileClose }: SidebarProps) => {
   const pathname = usePathname();
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
@@ -125,20 +130,34 @@ export const Sidebar = () => {
     item.roles.includes(user?.role as string)
   );
 
-  return (
-    <div className="w-72 h-screen bg-background border-r border-border/50 flex flex-col sticky top-0 z-50">
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    onMobileClose?.();
+  }, [pathname]);
+
+  const sidebarContent = (
+    <>
       {/* Logo Section */}
-      <div className="p-8 border-b border-border/50">
-        <div className="flex items-center gap-3">
-          <div>
-            <AdminText variant="bold" size="lg" className="leading-tight">BeeSeek</AdminText>
-            <AdminBadge variant="primary" className="mt-0.5 px-1 py-0 text-[8px]">Proprietary</AdminBadge>
+      <div className="p-6 lg:p-8 border-b border-border/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <AdminText variant="bold" size="lg" className="leading-tight">BeeSeek</AdminText>
+              <AdminBadge variant="primary" className="mt-0.5 px-1 py-0 text-[8px]">Proprietary</AdminBadge>
+            </div>
           </div>
+          {/* Close button — visible only on mobile overlay */}
+          <button
+            onClick={onMobileClose}
+            className="lg:hidden w-9 h-9 rounded-xl bg-surface flex items-center justify-center text-secondary hover:text-primary transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
+      <nav className="flex-1 px-3 lg:px-4 py-6 lg:py-8 space-y-1.5 lg:space-y-2 overflow-y-auto">
         {filteredMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -146,7 +165,7 @@ export const Sidebar = () => {
               key={item.href} 
               href={item.href}
               className={cn(
-                "flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all group",
+                "flex items-center justify-between px-4 py-3 lg:py-3.5 rounded-2xl transition-all group",
                 isActive 
                   ? "bg-primary text-white shadow-lg shadow-primary/20" 
                   : "text-secondary hover:bg-surface"
@@ -172,7 +191,7 @@ export const Sidebar = () => {
       <div className="p-4 mt-auto">
         <div className="bg-surface rounded-3xl p-4 border border-border/30">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
               {user?.firstName?.[0] || user?.email?.[0] || "A"}
             </div>
             <div className="overflow-hidden">
@@ -204,7 +223,31 @@ export const Sidebar = () => {
         cancelLabel="Discard"
         variant="danger"
       />
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar — always visible on lg+ */}
+      <div className="hidden lg:flex w-72 h-screen bg-background border-r border-border/50 flex-col sticky top-0 z-50">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile Overlay Sidebar */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-[110]">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={onMobileClose}
+          />
+          {/* Drawer */}
+          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-background flex flex-col shadow-2xl animate-in slide-in-from-left duration-300">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
