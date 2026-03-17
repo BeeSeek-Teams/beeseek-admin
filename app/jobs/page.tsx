@@ -26,10 +26,12 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import debounce from "lodash/debounce";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getJobs, updateJobStatus, Job, JobStatus, JobStep } from "@/lib/jobs";
 import { cn } from "@/lib/utils";
 
 export default function JobsPage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -201,13 +203,13 @@ export default function JobsPage() {
                 const displayTotal = job.contract.totalAmount > 0 ? job.contract.totalAmount : calculatedTotal;
 
                 return (
-                  <AdminTableRow key={job.id}>
+                  <AdminTableRow key={job.id} onClick={() => router.push(`/jobs/${job.id}`)}>
                     <AdminTableCell className="min-w-[300px] py-6">
                       <div className="flex flex-col gap-1">
                         <AdminText size="sm" variant="bold" className="line-clamp-1">{job.contract.details}</AdminText>
                         <div className="flex items-center gap-2">
                           <AdminText size="xs" color="secondary" className="text-[10px] font-mono">ID: {job.id.slice(0, 13)}...</AdminText>
-                          <button onClick={() => { navigator.clipboard.writeText(job.id); toast.success("ID Copied"); }} className="text-primary hover:text-primary/70">
+                          <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(job.id); toast.success("ID Copied"); }} className="text-primary hover:text-primary/70">
                             <ExternalLink size={10} />
                           </button>
                         </div>
@@ -261,7 +263,7 @@ export default function JobsPage() {
                     </div>
                   </AdminTableCell>
                   <AdminTableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <Link href={`/jobs/${job.id}`}>
                           <button 
                             className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-primary transition-colors flex items-center gap-1"
