@@ -32,20 +32,20 @@ export const getEconomicsStats = async (): Promise<EconomicsStats> => {
 };
 
 export const getPromotions = async (): Promise<Promotion[]> => {
-  const response = await api.get('/admin/promotions');
+  const response = await api.get('/promotions/admin');
   return response.data;
 };
 
 export const createPromotion = async (data: Partial<Promotion>): Promise<Promotion> => {
-  const response = await api.post('/admin/promotions', data);
+  const response = await api.post('/promotions/admin', data);
   return response.data;
 };
 
 export const updatePromotion = async (id: string, data: Partial<Promotion>): Promise<Promotion> => {
-  const response = await api.patch(`/admin/promotions/${id}`, data);
+  const response = await api.patch(`/promotions/admin/${id}`, data);
   return response.data;
 };
 
 export const deletePromotion = async (id: string): Promise<void> => {
-  await api.delete(`/admin/promotions/${id}`);
+  await api.delete(`/promotions/admin/${id}`);
 };
