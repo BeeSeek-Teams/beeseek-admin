@@ -103,9 +103,8 @@ export default function SosPage() {
   return (
     <div className="space-y-8">
       <AdminHeader
-        icon={Siren}
         title="SOS Alerts"
-        subtitle="Emergency alerts triggered by users during active jobs"
+        description="Emergency alerts triggered by users during active jobs"
       />
 
       {/* Filters */}
@@ -121,7 +120,7 @@ export default function SosPage() {
           </AdminButton>
         ))}
         <div className="ml-auto">
-          <AdminButton variant="ghost" size="sm" onClick={() => fetchAlerts()} icon={RefreshCcw}>
+          <AdminButton variant="ghost" size="sm" onClick={() => fetchAlerts()} icon={<RefreshCcw className="w-4 h-4" />}>
             Refresh
           </AdminButton>
         </div>
@@ -243,7 +242,7 @@ export default function SosPage() {
                           variant="primary"
                           onClick={() => handleResolve(alert.id)}
                           loading={resolvingId === alert.id}
-                          icon={CheckCircle2}
+                          icon={<CheckCircle2 className="w-4 h-4" />}
                         >
                           Confirm
                         </AdminButton>
@@ -261,7 +260,7 @@ export default function SosPage() {
                       size="sm"
                       variant="primary"
                       onClick={() => setNoteModalId(alert.id)}
-                      icon={CheckCircle2}
+                      icon={<CheckCircle2 className="w-4 h-4" />}
                     >
                       Resolve
                     </AdminButton>
@@ -280,7 +279,8 @@ export default function SosPage() {
       {total > itemsPerPage && (
         <AdminPagination
           currentPage={currentPage}
-          totalPages={Math.ceil(total / itemsPerPage)}
+          totalItems={total}
+          itemsPerPage={itemsPerPage}
           onPageChange={(page) => { setCurrentPage(page); fetchAlerts(page); }}
         />
       )}
