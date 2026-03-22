@@ -20,6 +20,7 @@ import {
   Bell,
   Activity,
   ShieldAlert,
+  Siren,
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,12 @@ const menuItems = [
     icon: MessageSquare, 
     label: "Support", 
     href: "/support",
+    roles: ["SUPPORT", "MODERATOR", "ADMIN", "SUPER_ADMIN"]
+  },
+  { 
+    icon: Siren, 
+    label: "SOS Alerts", 
+    href: "/sos",
     roles: ["SUPPORT", "MODERATOR", "ADMIN", "SUPER_ADMIN"]
   },
   { 
