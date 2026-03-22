@@ -104,7 +104,7 @@ const menuItems = [
   },
   { 
     icon: Activity, 
-    label: "Infrastructure", 
+    label: "App Settings", 
     href: "/infrastructure",
     roles: ["ADMIN", "SUPER_ADMIN"]
   },
