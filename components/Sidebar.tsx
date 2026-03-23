@@ -21,6 +21,7 @@ import {
   Activity,
   ShieldAlert,
   Siren,
+  Wrench,
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -106,6 +107,12 @@ const menuItems = [
     icon: Activity, 
     label: "App Settings", 
     href: "/infrastructure",
+    roles: ["ADMIN", "SUPER_ADMIN"]
+  },
+  { 
+    icon: Wrench, 
+    label: "Maintenance", 
+    href: "/maintenance",
     roles: ["ADMIN", "SUPER_ADMIN"]
   },
   { 
