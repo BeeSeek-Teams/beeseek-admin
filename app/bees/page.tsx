@@ -12,7 +12,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Trash,
-  CurrencyDollar,
+  CurrencyNgn,
   ChartBar,
   CheckCircle,
   SpinnerGap,
@@ -186,7 +186,7 @@ export default function BeesPage() {
         {[
           { label: "Total Listings", value: stats?.totalBees, icon: Briefcase, color: "bg-primary/10 text-primary" },
           { label: "Active", value: stats?.activeBees, icon: CheckCircle, color: "bg-green-50 text-green-600" },
-          { label: "Revenue", value: stats ? formatCurrency(stats.totalRevenue) : null, icon: CurrencyDollar, color: "bg-amber-50 text-amber-600", isCurrency: true },
+          { label: "Revenue", value: stats ? formatCurrency(stats.totalRevenue) : null, icon: CurrencyNgn, color: "bg-amber-50 text-amber-600", isCurrency: true },
           { label: "Avg Rating", value: stats?.avgRating, icon: Star, color: "bg-blue-50 text-blue-600" },
         ].map((stat, i) => {
           const Icon = stat.icon;

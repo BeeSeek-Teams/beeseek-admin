@@ -13,7 +13,7 @@ import {
   Fingerprint,
   Briefcase,
   ChartPie,
-  CurrencyDollar,
+  CurrencyNgn,
   TrendUp,
   Ticket,
   ClipboardText,
@@ -66,7 +66,7 @@ const menuItems = [
     roles: ["MODERATOR", "ADMIN", "SUPER_ADMIN"]
   },
   { 
-    icon: CurrencyDollar, 
+    icon: CurrencyNgn, 
     label: "Transactions", 
     href: "/transactions",
     roles: ["ADMIN", "SUPER_ADMIN"]
