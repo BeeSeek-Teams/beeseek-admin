@@ -23,7 +23,7 @@ import { AdminPagination } from "@/components/AdminPagination";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getFlaggedReviews, toggleReviewFlag, Review, getFraudLogs, FraudLog } from "@/lib/reviews";
-import { getAdminInfractions, Job } from "@/lib/jobs";
+import { getAdminInfractions, getAgentInfractionCount, Job } from "@/lib/jobs";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +38,7 @@ export default function IntegrityPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [infractionCounts, setInfractionCounts] = useState<Record<string, number>>({});
   const itemsPerPage = 10;
 
   const fetchData = useCallback(async (page = currentPage) => {
@@ -230,7 +231,7 @@ export default function IntegrityPage() {
           )}
 
           {activeTab === "infractions" && (
-            <AdminTable headers={["Agent (Breach)", "Client", "Job Details", "Reason / Category", "Retention", "Date"]}>
+            <AdminTable headers={["Agent (Breach)", "Total Strikes", "Job Details", "Reason / Category", "Financial Impact", "Date"]}>
               {loading ? (
                 Array(3).fill(0).map((_, i) => (
                   <AdminTableRow key={i}>
@@ -247,48 +248,92 @@ export default function IntegrityPage() {
                   </AdminTableCell>
                 </AdminTableRow>
               ) : (
-                infractions.map((job) => (
-                  <AdminTableRow key={job.id}>
-                    <AdminTableCell>
-                      <div className="flex flex-col">
-                        <AdminText size="sm" variant="bold">{job.contract.agent.firstName} {job.contract.agent.lastName}</AdminText>
-                        <AdminText size="xs" color="error" className="uppercase tracking-tighter text-[10px] font-bold">RETAINED FARE</AdminText>
-                      </div>
-                    </AdminTableCell>
-                    <AdminTableCell>
-                      <AdminText size="sm" variant="bold">{job.contract.client.firstName} {job.contract.client.lastName}</AdminText>
-                    </AdminTableCell>
-                    <AdminTableCell className="max-w-xs">
-                      <div className="flex flex-col gap-1">
-                        <AdminText size="xs" className="line-clamp-1">{job.contract.details}</AdminText>
-                        <Link href={`/jobs/${job.id}`} className="flex items-center gap-1 text-[10px] text-primary hover:underline">
-                          <ExternalLink size={10} />
-                          Job: {job.id.slice(0, 8)}
-                        </Link>
-                      </div>
-                    </AdminTableCell>
-                    <AdminTableCell>
-                      <div className="flex flex-col gap-1">
-                        <AdminBadge variant="error" className="text-[10px] py-0.5 w-fit uppercase">
-                          {job.cancellationAudit?.category?.replace(/_/g, " ") || "No Category"}
-                        </AdminBadge>
-                        <AdminText size="xs" className="italic text-slate-500 line-clamp-1">
-                          "{job.cancellationAudit?.reason}"
+                infractions.map((job) => {
+                  const agentId = job.contract?.agent?.id;
+                  const count = agentId ? infractionCounts[agentId] : undefined;
+
+                  // Lazy-load infraction count if not cached
+                  if (agentId && count === undefined && !infractionCounts.hasOwnProperty(agentId)) {
+                    setInfractionCounts(prev => ({ ...prev, [agentId]: -1 })); // -1 = loading
+                    getAgentInfractionCount(agentId)
+                      .then(data => setInfractionCounts(prev => ({ ...prev, [agentId]: data.infractionCount })))
+                      .catch(() => setInfractionCounts(prev => ({ ...prev, [agentId]: 0 })));
+                  }
+
+                  const strikes = count && count > 0 ? count : null;
+                  const severityVariant = strikes && strikes >= 5 ? "error" : strikes && strikes >= 3 ? "warning" : "secondary";
+
+                  return (
+                    <AdminTableRow key={job.id}>
+                      <AdminTableCell>
+                        <div className="flex flex-col">
+                          <AdminText size="sm" variant="bold">{job.contract.agent.firstName} {job.contract.agent.lastName}</AdminText>
+                          <AdminText size="xs" color="error" className="uppercase tracking-tighter text-[10px] font-bold">AGENT BREACH</AdminText>
+                        </div>
+                      </AdminTableCell>
+                      <AdminTableCell>
+                        {strikes ? (
+                          <div className="flex flex-col items-start gap-1">
+                            <AdminBadge variant={severityVariant as any} className="text-xs py-0.5 px-2 font-black">
+                              {strikes} {strikes === 1 ? 'Strike' : 'Strikes'}
+                            </AdminBadge>
+                            {strikes >= 3 && strikes < 5 && (
+                              <AdminText size="xs" className="text-amber-600 font-bold">Wallet Freeze Zone</AdminText>
+                            )}
+                            {strikes >= 5 && (
+                              <AdminText size="xs" className="text-red-600 font-bold">Suspension Risk</AdminText>
+                            )}
+                          </div>
+                        ) : (
+                          <AdminText size="xs" color="secondary">{count === -1 ? '...' : '—'}</AdminText>
+                        )}
+                      </AdminTableCell>
+                      <AdminTableCell className="max-w-xs">
+                        <div className="flex flex-col gap-1">
+                          <AdminText size="xs" className="line-clamp-1">{job.contract.details}</AdminText>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/jobs/${job.id}`} className="flex items-center gap-1 text-[10px] text-primary hover:underline">
+                              <ExternalLink size={10} />
+                              Job: {job.id.slice(0, 8)}
+                            </Link>
+                            <AdminText size="xs" color="secondary">•</AdminText>
+                            <AdminText size="xs" color="secondary">{job.contract.client.firstName} {job.contract.client.lastName}</AdminText>
+                          </div>
+                        </div>
+                      </AdminTableCell>
+                      <AdminTableCell>
+                        <div className="flex flex-col gap-1">
+                          <AdminBadge variant="error" className="text-[10px] py-0.5 w-fit uppercase">
+                            {job.cancellationAudit?.category?.replace(/_/g, " ") || "No Category"}
+                          </AdminBadge>
+                          <AdminText size="xs" className="italic text-slate-500 line-clamp-1">
+                            "{job.cancellationAudit?.reason}"
+                          </AdminText>
+                        </div>
+                      </AdminTableCell>
+                      <AdminTableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <AdminText variant="bold" size="sm" color="error">
+                            ₦{((job.cancellationAudit?.refundedAmount || 0) / 100).toLocaleString()}
+                          </AdminText>
+                          <AdminText size="xs" color="secondary">
+                            Refunded to client
+                          </AdminText>
+                          {(job.cancellationAudit?.agentRetention || 0) > 0 && (
+                            <AdminText size="xs" className="text-amber-600">
+                              Agent kept ₦{((job.cancellationAudit?.agentRetention || 0) / 100).toLocaleString()}
+                            </AdminText>
+                          )}
+                        </div>
+                      </AdminTableCell>
+                      <AdminTableCell>
+                        <AdminText size="xs" color="secondary">
+                          {format(new Date(job.cancellationAudit?.createdAt || job.createdAt), "MMM d, HH:mm")}
                         </AdminText>
-                      </div>
-                    </AdminTableCell>
-                    <AdminTableCell>
-                      <AdminText variant="bold" size="sm" color="error">
-                        ₦{job.cancellationAudit?.agentRetention?.toLocaleString()}
-                      </AdminText>
-                    </AdminTableCell>
-                    <AdminTableCell>
-                      <AdminText size="xs" color="secondary">
-                        {format(new Date(job.cancellationAudit?.createdAt || job.createdAt), "MMM d, HH:mm")}
-                      </AdminText>
-                    </AdminTableCell>
-                  </AdminTableRow>
-                ))
+                      </AdminTableCell>
+                    </AdminTableRow>
+                  );
+                })
               )}
             </AdminTable>
           )}

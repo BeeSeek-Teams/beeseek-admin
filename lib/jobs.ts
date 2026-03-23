@@ -86,3 +86,13 @@ export const getAdminInfractions = async (params: any) => {
   const response = await api.get('/contracts/admin/infractions', { params });
   return response.data;
 };
+
+export const adminCancelJob = async (jobId: string, reason: string, markAsInfraction: boolean = false) => {
+  const response = await api.post(`/contracts/admin/jobs/${jobId}/cancel`, { reason, markAsInfraction });
+  return response.data;
+};
+
+export const getAgentInfractionCount = async (agentId: string): Promise<{ agentId: string; infractionCount: number }> => {
+  const response = await api.get(`/contracts/admin/agents/${agentId}/infraction-count`);
+  return response.data;
+};

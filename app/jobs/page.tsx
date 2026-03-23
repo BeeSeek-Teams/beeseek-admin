@@ -27,7 +27,8 @@ import { format } from "date-fns";
 import debounce from "lodash/debounce";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getJobs, updateJobStatus, Job, JobStatus, JobStep } from "@/lib/jobs";
+import { getJobs, updateJobStatus, adminCancelJob, Job, JobStatus, JobStep } from "@/lib/jobs";
+import { AdminConsentModal } from "@/components/AdminConsentModal";
 import { cn } from "@/lib/utils";
 
 export default function JobsPage() {
@@ -35,6 +36,9 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [cancelModal, setCancelModal] = useState<{ jobId: string; details: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelAsInfraction, setCancelAsInfraction] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<JobStatus | "">("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,6 +99,26 @@ export default function JobsPage() {
       fetchJobs();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to escalate job");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleForceCancel = async () => {
+    if (!cancelModal || !cancelReason.trim()) {
+      toast.error("Please provide a reason for cancellation");
+      return;
+    }
+    try {
+      setProcessingId(cancelModal.jobId);
+      await adminCancelJob(cancelModal.jobId, cancelReason.trim(), cancelAsInfraction);
+      toast.success(`Job force-cancelled${cancelAsInfraction ? " (infraction recorded)" : ""}`);
+      setCancelModal(null);
+      setCancelReason("");
+      setCancelAsInfraction(false);
+      fetchJobs();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to force-cancel job");
     } finally {
       setProcessingId(null);
     }
@@ -287,6 +311,24 @@ export default function JobsPage() {
                           </button>
                         )}
 
+                        {(job.status === JobStatus.ACTIVE || job.status === JobStatus.ESCALATED) && (
+                          <button 
+                            onClick={() => {
+                              setCancelReason("");
+                              setCancelAsInfraction(job.status === JobStatus.ESCALATED);
+                              setCancelModal({ jobId: job.id, details: job.contract.details });
+                            }}
+                            disabled={processingId === job.id}
+                            className={cn(
+                              "p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1",
+                              processingId === job.id && "animate-pulse cursor-not-allowed"
+                            )}
+                            title="Force Cancel (with refund)"
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        )}
+
                         <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-primary transition-colors">
                           <MoreHorizontal size={16} />
                         </button>
@@ -308,6 +350,61 @@ export default function JobsPage() {
           onPageChange={setCurrentPage}
         />
       </div>
+
+      {/* Force Cancel Modal */}
+      {cancelModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCancelModal(null)} />
+          <div className="relative bg-white rounded-[32px] p-8 max-w-md w-full mx-4 shadow-2xl">
+            <AdminText variant="bold" size="lg" className="mb-2">Force Cancel Job</AdminText>
+            <AdminText size="sm" color="secondary" className="mb-6">
+              This will cancel the job and trigger a full financial reversal. Funds will be returned to the client.
+            </AdminText>
+            
+            <div className="mb-4">
+              <AdminText size="xs" variant="bold" className="mb-2 uppercase tracking-wide text-slate-500">Job Details</AdminText>
+              <AdminText size="sm" className="italic text-slate-600 line-clamp-2">&ldquo;{cancelModal.details}&rdquo;</AdminText>
+            </div>
+
+            <div className="mb-4">
+              <AdminText size="xs" variant="bold" className="mb-2 uppercase tracking-wide text-slate-500">Cancellation Reason *</AdminText>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Describe why this job is being force-cancelled..."
+                className="w-full border border-slate-200 rounded-2xl p-4 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+
+            <label className="flex items-center gap-3 mb-6 p-4 bg-red-50 rounded-2xl border border-red-100 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={cancelAsInfraction} 
+                onChange={(e) => setCancelAsInfraction(e.target.checked)}
+                className="w-4 h-4 accent-red-600"
+              />
+              <div>
+                <AdminText size="sm" variant="bold" color="error">Mark as Agent Infraction</AdminText>
+                <AdminText size="xs" color="secondary">Service fee refunded to client. Recorded as a strike on agent&rsquo;s record.</AdminText>
+              </div>
+            </label>
+
+            <div className="flex gap-3">
+              <AdminButton variant="outline" className="flex-1" onClick={() => setCancelModal(null)}>
+                Discard
+              </AdminButton>
+              <AdminButton 
+                variant="primary" 
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={handleForceCancel}
+                disabled={!cancelReason.trim() || processingId === cancelModal.jobId}
+              >
+                {processingId === cancelModal.jobId ? "Processing..." : "Force Cancel"}
+              </AdminButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
