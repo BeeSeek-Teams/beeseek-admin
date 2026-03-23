@@ -26,9 +26,11 @@ import { AdminConsentModal } from "@/components/AdminConsentModal";
 import { getBees, getBeeStats, toggleBeeActive, deleteBee, Bee, BeeStats } from "@/lib/bees";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import debounce from "lodash/debounce";
 
 export default function BeesPage() {
+  const router = useRouter();
   const [bees, setBees] = useState<Bee[]>([]);
   const [stats, setStats] = useState<BeeStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -294,7 +296,7 @@ export default function BeesPage() {
               </AdminTableRow>
             ) : (
               bees.map((bee) => (
-                <AdminTableRow key={bee.id}>
+                <AdminTableRow key={bee.id} className="cursor-pointer hover:bg-black/[0.01]" onClick={() => router.push(`/bees/${bee.id}`)}>
                   <AdminTableCell>
                     <div className="flex items-center gap-3 max-w-[260px]">
                       <div className="w-10 h-10 rounded-xl bg-black/[0.03] border border-black/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -377,7 +379,7 @@ export default function BeesPage() {
                     </div>
                   </AdminTableCell>
                   <AdminTableCell>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleToggleActive(bee)}
                         disabled={processingId === bee.id}
