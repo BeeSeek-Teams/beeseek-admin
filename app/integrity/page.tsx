@@ -2,24 +2,19 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { 
-  ShieldAlert, 
-  RefreshCcw, 
+  ShieldWarning, 
+  ArrowClockwise, 
   ShieldCheck, 
-  User as UserIcon,
-  MessageSquare,
   Star,
-  ExternalLink,
-  Trash2,
-  CheckCircle2,
-  MoreHorizontal,
-  Copy
-} from "lucide-react";
+  Copy,
+  CheckCircle,
+  Eye
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
 import { AdminPagination } from "@/components/AdminPagination";
+import { AdminConsentModal } from "@/components/AdminConsentModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getFlaggedReviews, toggleReviewFlag, Review, getFraudLogs, FraudLog } from "@/lib/reviews";
@@ -39,6 +34,7 @@ export default function IntegrityPage() {
   const [total, setTotal] = useState(0);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [infractionCounts, setInfractionCounts] = useState<Record<string, number>>({});
+  const [resolveModal, setResolveModal] = useState<string | null>(null);
   const itemsPerPage = 10;
 
   const fetchData = useCallback(async (page = currentPage) => {
@@ -58,7 +54,7 @@ export default function IntegrityPage() {
         setTotal(data.meta.total);
       }
     } catch (error) {
-      toast.error(`Failed to fetch ${activeTab}`);
+      toast.error(`Couldn't load ${activeTab}`);
     } finally {
       setLoading(false);
     }
@@ -74,106 +70,102 @@ export default function IntegrityPage() {
   };
 
   const handleResolve = async (id: string) => {
-    if (!window.confirm("Mark this review as SAFE? It will be visible to users and count towards ratings.")) return;
-    
     try {
       setProcessingId(id);
       await toggleReviewFlag(id, false);
-      toast.success("Review restored and marked as safe");
+      toast.success("Review marked as safe");
       fetchData();
     } catch (error) {
-      toast.error("Failed to update review status");
+      toast.error("Couldn't update review");
     } finally {
       setProcessingId(null);
+      setResolveModal(null);
     }
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map((s) => (
-          <Star 
-            key={s} 
-            size={12} 
-            className={cn(s <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200")} 
-          />
-        ))}
-      </div>
-    );
-  };
+  const renderStars = (rating: number) => (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star 
+          key={s} 
+          size={12} 
+          weight={s <= rating ? "fill" : "regular"}
+          className={cn(s <= rating ? "text-amber-400" : "text-black/10")} 
+        />
+      ))}
+    </div>
+  );
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 md:space-y-8">
+      <AdminConsentModal
+        isOpen={!!resolveModal}
+        onClose={() => setResolveModal(null)}
+        onConfirm={() => resolveModal && handleResolve(resolveModal)}
+        title="Mark this review as safe?"
+        description="The review will become visible on the agent's profile and count towards their average rating."
+        confirmLabel="Mark as Safe"
+        variant="primary"
+        loading={!!processingId}
+      />
+
       <AdminHeader
-        title="Integrity Care"
-        description="Monitor automated fraud detection flags and manage platform veracity."
+        title="Integrity"
+        description="Flagged reviews, cancellation infractions, and fraud detection logs."
         action={
-          <AdminButton variant="outline" size="sm" className="gap-2" onClick={() => fetchData()}>
-            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </AdminButton>
+          <button onClick={() => fetchData()} className="p-2.5 bg-white border border-black/5 rounded-xl text-black/30 hover:bg-black/[0.02] transition-colors">
+            <ArrowClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
+          </button>
         }
       />
 
-      <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl w-fit">
-        <button 
-          onClick={() => handleTabChange("reviews")}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold transition-all",
-            activeTab === "reviews" ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"
-          )}
-        >
-          Flagged Reviews
-        </button>
-        <button 
-          onClick={() => handleTabChange("infractions")}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold transition-all",
-            activeTab === "infractions" ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"
-          )}
-        >
-          Cancellation Infractions
-        </button>
-        <button 
-          onClick={() => handleTabChange("fraud-logs")}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold transition-all",
-            activeTab === "fraud-logs" ? "bg-white shadow-sm text-primary" : "text-slate-500 hover:text-slate-700"
-          )}
-        >
-          Fraud Audit Log
-        </button>
+      <div className="flex gap-1.5 bg-black/[0.04] p-1.5 rounded-xl w-fit">
+        {([
+          { key: "reviews" as Tab, label: "Flagged Reviews" },
+          { key: "infractions" as Tab, label: "Infractions" },
+          { key: "fraud-logs" as Tab, label: "Fraud Log" },
+        ]).map((tab) => (
+          <button 
+            key={tab.key}
+            onClick={() => handleTabChange(tab.key)}
+            className={cn(
+              "px-4 py-2 rounded-lg text-xs font-bold transition-all",
+              activeTab === tab.key ? "bg-white shadow-sm text-primary" : "text-black/30 hover:text-black/50"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-[32px] p-6 flex gap-4">
-        <div className="p-3 bg-white rounded-2xl border border-amber-100 shadow-sm text-amber-500">
-          <ShieldAlert size={24} />
+      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3 items-start">
+        <div className="p-2 bg-amber-100 rounded-xl text-amber-600 shrink-0">
+          <ShieldWarning size={18} weight="fill" />
         </div>
         <div>
-          <AdminText variant="bold" className="text-amber-900">Fraud Detection Active</AdminText>
-          <AdminText size="sm" className="text-amber-800">
-            System is currently triangulating Hardware IDs, IP addresses, and BVN matches. 
-            Flagged reviews are hidden from agent profiles and <strong>not counted</strong> in their average rating.
-          </AdminText>
+          <p className="text-xs font-bold text-amber-900">Fraud detection is active</p>
+          <p className="text-[10px] text-amber-700/60 mt-0.5">
+            Flagged reviews are hidden from profiles and <strong>not counted</strong> in average ratings.
+          </p>
         </div>
       </div>
 
-      <div className="bg-white border border-border/50 rounded-[32px] overflow-hidden shadow-sm overflow-x-auto min-w-full">
-        <div className="min-w-[1200px]">
+      <div className="bg-white border border-black/5 rounded-2xl overflow-hidden overflow-x-auto">
+        <div className="min-w-[1000px]">
           {activeTab === "reviews" && (
             <AdminTable headers={["Reviewer", "Reviewee", "Details", "Flag Reason", "Score", "Actions"]}>
               {loading ? (
                 Array(3).fill(0).map((_, i) => (
                   <AdminTableRow key={i}>
-                    <AdminTableCell colSpan={6}><div className="h-16 bg-slate-50 animate-pulse rounded-xl" /></AdminTableCell>
+                    <AdminTableCell colSpan={6}><div className="h-14 bg-black/[0.02] animate-pulse rounded-lg" /></AdminTableCell>
                   </AdminTableRow>
                 ))
               ) : reviews.length === 0 ? (
                 <AdminTableRow>
                   <AdminTableCell colSpan={6} className="text-center py-20">
-                    <div className="flex flex-col items-center gap-2 opacity-50">
-                      <ShieldCheck size={48} className="text-success" />
-                      <AdminText variant="bold" color="secondary">No flagged reviews detected</AdminText>
+                    <div className="flex flex-col items-center gap-2">
+                      <ShieldCheck size={40} weight="duotone" className="text-black/10" />
+                      <p className="text-sm font-bold text-black/30">No flagged reviews</p>
                     </div>
                   </AdminTableCell>
                 </AdminTableRow>
@@ -182,24 +174,24 @@ export default function IntegrityPage() {
                   <AdminTableRow key={review.id}>
                     <AdminTableCell>
                       <div className="flex flex-col">
-                        <AdminText size="sm" variant="bold">{review.reviewer.firstName} {review.reviewer.lastName}</AdminText>
-                        <AdminText size="xs" color="secondary" className="uppercase tracking-tighter text-[10px] font-bold">{review.reviewerRole}</AdminText>
+                        <p className="text-sm font-bold">{review.reviewer.firstName} {review.reviewer.lastName}</p>
+                        <p className="text-[10px] font-bold text-black/25 uppercase">{review.reviewerRole}</p>
                       </div>
                     </AdminTableCell>
                     <AdminTableCell>
-                      <AdminText size="sm" variant="bold">{review.reviewee.firstName} {review.reviewee.lastName}</AdminText>
+                      <p className="text-sm font-bold">{review.reviewee.firstName} {review.reviewee.lastName}</p>
                     </AdminTableCell>
                     <AdminTableCell className="max-w-xs">
                       <div className="flex flex-col gap-1">
-                        <AdminText size="xs" className="italic text-slate-500 line-clamp-2">"{review.comment || "No comment"}"</AdminText>
-                        <Link href={`/jobs/${review.id}`} className="flex items-center gap-1 text-[10px] text-primary hover:underline">
-                          <ExternalLink size={10} />
+                        <p className="text-xs italic text-black/40 line-clamp-2">"{review.comment || "No comment"}"</p>
+                        <Link href={`/jobs/${review.jobId}`} className="flex items-center gap-1 text-[10px] text-primary hover:underline">
+                          <Eye size={10} weight="bold" />
                           Job: {review.jobId.slice(0, 8)}
                         </Link>
                       </div>
                     </AdminTableCell>
                     <AdminTableCell>
-                      <AdminBadge variant="error" className="text-[10px] py-0.5">
+                      <AdminBadge variant="error">
                         {review.flagReason || "Fraud Suspected"}
                       </AdminBadge>
                     </AdminTableCell>
@@ -207,22 +199,17 @@ export default function IntegrityPage() {
                       {renderStars(review.rating)}
                     </AdminTableCell>
                     <AdminTableCell>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => handleResolve(review.id)}
-                          disabled={processingId === review.id}
-                          className={cn(
-                            "p-2 hover:bg-success/10 rounded-lg text-slate-400 hover:text-success transition-colors",
-                            processingId === review.id && "animate-pulse"
-                          )}
-                          title="Mark as safe"
-                        >
-                          <CheckCircle2 size={18} />
-                        </button>
-                        <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-primary transition-colors">
-                          <MoreHorizontal size={18} />
-                        </button>
-                      </div>
+                      <button 
+                        onClick={() => setResolveModal(review.id)}
+                        disabled={processingId === review.id}
+                        className={cn(
+                          "p-2 hover:bg-green-50 rounded-lg text-black/20 hover:text-success transition-colors",
+                          processingId === review.id && "animate-pulse"
+                        )}
+                        title="Mark as safe"
+                      >
+                        <CheckCircle size={18} weight="bold" />
+                      </button>
                     </AdminTableCell>
                   </AdminTableRow>
                 ))
@@ -231,19 +218,19 @@ export default function IntegrityPage() {
           )}
 
           {activeTab === "infractions" && (
-            <AdminTable headers={["Agent (Breach)", "Total Strikes", "Job Details", "Reason / Category", "Financial Impact", "Date"]}>
+            <AdminTable headers={["Agent", "Strikes", "Job Details", "Reason", "Refunded", "Date"]}>
               {loading ? (
                 Array(3).fill(0).map((_, i) => (
                   <AdminTableRow key={i}>
-                    <AdminTableCell colSpan={6}><div className="h-16 bg-slate-50 animate-pulse rounded-xl" /></AdminTableCell>
+                    <AdminTableCell colSpan={6}><div className="h-14 bg-black/[0.02] animate-pulse rounded-lg" /></AdminTableCell>
                   </AdminTableRow>
                 ))
               ) : infractions.length === 0 ? (
                 <AdminTableRow>
                   <AdminTableCell colSpan={6} className="text-center py-20">
-                    <div className="flex flex-col items-center gap-2 opacity-50">
-                      <ShieldCheck size={48} className="text-success" />
-                      <AdminText variant="bold" color="secondary">No cancellation infractions found</AdminText>
+                    <div className="flex flex-col items-center gap-2">
+                      <ShieldCheck size={40} weight="duotone" className="text-black/10" />
+                      <p className="text-sm font-bold text-black/30">No infractions found</p>
                     </div>
                   </AdminTableCell>
                 </AdminTableRow>
@@ -252,9 +239,8 @@ export default function IntegrityPage() {
                   const agentId = job.contract?.agent?.id;
                   const count = agentId ? infractionCounts[agentId] : undefined;
 
-                  // Lazy-load infraction count if not cached
                   if (agentId && count === undefined && !infractionCounts.hasOwnProperty(agentId)) {
-                    setInfractionCounts(prev => ({ ...prev, [agentId]: -1 })); // -1 = loading
+                    setInfractionCounts(prev => ({ ...prev, [agentId]: -1 }));
                     getAgentInfractionCount(agentId)
                       .then(data => setInfractionCounts(prev => ({ ...prev, [agentId]: data.infractionCount })))
                       .catch(() => setInfractionCounts(prev => ({ ...prev, [agentId]: 0 })));
@@ -267,69 +253,67 @@ export default function IntegrityPage() {
                     <AdminTableRow key={job.id}>
                       <AdminTableCell>
                         <div className="flex flex-col">
-                          <AdminText size="sm" variant="bold">{job.contract.agent.firstName} {job.contract.agent.lastName}</AdminText>
-                          <AdminText size="xs" color="error" className="uppercase tracking-tighter text-[10px] font-bold">AGENT BREACH</AdminText>
+                          <p className="text-sm font-bold">{job.contract.agent.firstName} {job.contract.agent.lastName}</p>
+                          <p className="text-[10px] font-bold text-error uppercase">Cancelled</p>
                         </div>
                       </AdminTableCell>
                       <AdminTableCell>
                         {strikes ? (
                           <div className="flex flex-col items-start gap-1">
-                            <AdminBadge variant={severityVariant as any} className="text-xs py-0.5 px-2 font-black">
+                            <AdminBadge variant={severityVariant as any}>
                               {strikes} {strikes === 1 ? 'Strike' : 'Strikes'}
                             </AdminBadge>
                             {strikes >= 3 && strikes < 5 && (
-                              <AdminText size="xs" className="text-amber-600 font-bold">Wallet Freeze Zone</AdminText>
+                              <p className="text-[10px] font-bold text-amber-600">Wallet freeze zone</p>
                             )}
                             {strikes >= 5 && (
-                              <AdminText size="xs" className="text-red-600 font-bold">Suspension Risk</AdminText>
+                              <p className="text-[10px] font-bold text-red-600">Suspension risk</p>
                             )}
                           </div>
                         ) : (
-                          <AdminText size="xs" color="secondary">{count === -1 ? '...' : '—'}</AdminText>
+                          <p className="text-xs text-black/20">{count === -1 ? '...' : '—'}</p>
                         )}
                       </AdminTableCell>
                       <AdminTableCell className="max-w-xs">
                         <div className="flex flex-col gap-1">
-                          <AdminText size="xs" className="line-clamp-1">{job.contract.details}</AdminText>
+                          <p className="text-xs text-black/60 line-clamp-1">{job.contract.details}</p>
                           <div className="flex items-center gap-2">
                             <Link href={`/jobs/${job.id}`} className="flex items-center gap-1 text-[10px] text-primary hover:underline">
-                              <ExternalLink size={10} />
-                              Job: {job.id.slice(0, 8)}
+                              <Eye size={10} weight="bold" />
+                              {job.id.slice(0, 8)}
                             </Link>
-                            <AdminText size="xs" color="secondary">•</AdminText>
-                            <AdminText size="xs" color="secondary">{job.contract.client.firstName} {job.contract.client.lastName}</AdminText>
+                            <span className="text-black/10">•</span>
+                            <p className="text-[10px] text-black/30">{job.contract.client.firstName} {job.contract.client.lastName}</p>
                           </div>
                         </div>
                       </AdminTableCell>
                       <AdminTableCell>
                         <div className="flex flex-col gap-1">
-                          <AdminBadge variant="error" className="text-[10px] py-0.5 w-fit uppercase">
+                          <AdminBadge variant="error">
                             {job.cancellationAudit?.category?.replace(/_/g, " ") || "No Category"}
                           </AdminBadge>
-                          <AdminText size="xs" className="italic text-slate-500 line-clamp-1">
+                          <p className="text-[10px] italic text-black/30 line-clamp-1">
                             "{job.cancellationAudit?.reason}"
-                          </AdminText>
+                          </p>
                         </div>
                       </AdminTableCell>
                       <AdminTableCell>
                         <div className="flex flex-col gap-0.5">
-                          <AdminText variant="bold" size="sm" color="error">
+                          <p className="text-sm font-bold text-error">
                             ₦{((job.cancellationAudit?.refundedAmount || 0) / 100).toLocaleString()}
-                          </AdminText>
-                          <AdminText size="xs" color="secondary">
-                            Refunded to client
-                          </AdminText>
+                          </p>
+                          <p className="text-[10px] text-black/30">Refunded to client</p>
                           {(job.cancellationAudit?.agentRetention || 0) > 0 && (
-                            <AdminText size="xs" className="text-amber-600">
+                            <p className="text-[10px] text-amber-600">
                               Agent kept ₦{((job.cancellationAudit?.agentRetention || 0) / 100).toLocaleString()}
-                            </AdminText>
+                            </p>
                           )}
                         </div>
                       </AdminTableCell>
                       <AdminTableCell>
-                        <AdminText size="xs" color="secondary">
+                        <p className="text-xs text-black/30">
                           {format(new Date(job.cancellationAudit?.createdAt || job.createdAt), "MMM d, HH:mm")}
-                        </AdminText>
+                        </p>
                       </AdminTableCell>
                     </AdminTableRow>
                   );
@@ -339,19 +323,19 @@ export default function IntegrityPage() {
           )}
 
           {activeTab === "fraud-logs" && (
-            <AdminTable headers={["Attempted By", "Target", "Reason", "Action", "Attempted Rating", "Date"]}>
+            <AdminTable headers={["Attempted By", "Target", "Reason", "Action", "Rating", "Date"]}>
               {loading ? (
                 Array(3).fill(0).map((_, i) => (
                   <AdminTableRow key={i}>
-                    <AdminTableCell colSpan={6}><div className="h-16 bg-slate-50 animate-pulse rounded-xl" /></AdminTableCell>
+                    <AdminTableCell colSpan={6}><div className="h-14 bg-black/[0.02] animate-pulse rounded-lg" /></AdminTableCell>
                   </AdminTableRow>
                 ))
               ) : fraudLogs.length === 0 ? (
                 <AdminTableRow>
                   <AdminTableCell colSpan={6} className="text-center py-20">
-                    <div className="flex flex-col items-center gap-2 opacity-50">
-                      <ShieldCheck size={48} className="text-success" />
-                      <AdminText variant="bold" color="secondary">No fraud events logged</AdminText>
+                    <div className="flex flex-col items-center gap-2">
+                      <ShieldCheck size={40} weight="duotone" className="text-black/10" />
+                      <p className="text-sm font-bold text-black/30">No fraud events logged</p>
                     </div>
                   </AdminTableCell>
                 </AdminTableRow>
@@ -360,42 +344,42 @@ export default function IntegrityPage() {
                   <AdminTableRow key={log.id}>
                     <AdminTableCell>
                       <div className="flex flex-col gap-0.5">
-                        <AdminText size="sm" variant="bold">{log.attemptedBy.firstName} {log.attemptedBy.lastName}</AdminText>
-                        <AdminText size="xs" color="secondary" className="uppercase tracking-tighter text-[10px] font-bold">{log.attemptedRole || "—"}</AdminText>
+                        <p className="text-sm font-bold">{log.attemptedBy.firstName} {log.attemptedBy.lastName}</p>
+                        <p className="text-[10px] font-bold text-black/25 uppercase">{log.attemptedRole || "—"}</p>
                         <button
-                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(log.attemptedById); toast.success("User ID copied"); }}
-                          className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-primary transition-colors w-fit mt-0.5"
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(log.attemptedById); toast.success("Copied"); }}
+                          className="flex items-center gap-1 text-[10px] text-black/20 hover:text-primary transition-colors w-fit mt-0.5"
                           title={log.attemptedById}
                         >
-                          <Copy size={9} />
+                          <Copy size={9} weight="bold" />
                           <span className="font-mono">{log.attemptedById.slice(0, 8)}</span>
                         </button>
                       </div>
                     </AdminTableCell>
                     <AdminTableCell>
                       <div className="flex flex-col gap-0.5">
-                        <AdminText size="sm" variant="bold">{log.targetUser.firstName} {log.targetUser.lastName}</AdminText>
+                        <p className="text-sm font-bold">{log.targetUser.firstName} {log.targetUser.lastName}</p>
                         <button
-                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(log.targetUserId); toast.success("User ID copied"); }}
-                          className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-primary transition-colors w-fit mt-0.5"
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(log.targetUserId); toast.success("Copied"); }}
+                          className="flex items-center gap-1 text-[10px] text-black/20 hover:text-primary transition-colors w-fit mt-0.5"
                           title={log.targetUserId}
                         >
-                          <Copy size={9} />
+                          <Copy size={9} weight="bold" />
                           <span className="font-mono">{log.targetUserId.slice(0, 8)}</span>
                         </button>
                       </div>
                     </AdminTableCell>
                     <AdminTableCell className="max-w-xs">
                       <div className="flex flex-col gap-1">
-                        <AdminBadge variant="error" className="text-[10px] py-0.5">
+                        <AdminBadge variant="error">
                           {log.reason}
                         </AdminBadge>
                         {log.attemptedComment && (
-                          <AdminText size="xs" className="italic text-slate-500 line-clamp-2">"{log.attemptedComment}"</AdminText>
+                          <p className="text-[10px] italic text-black/30 line-clamp-2">"{log.attemptedComment}"</p>
                         )}
                         {log.jobId && (
                           <Link href={`/jobs/${log.jobId}`} className="flex items-center gap-1 text-[10px] text-primary hover:underline">
-                            <ExternalLink size={10} />
+                            <Eye size={10} weight="bold" />
                             Job: {log.jobId.slice(0, 8)}
                           </Link>
                         )}
@@ -404,20 +388,19 @@ export default function IntegrityPage() {
                     <AdminTableCell>
                       <AdminBadge 
                         variant={log.action === "BLOCKED" ? "error" : "warning"} 
-                        className="text-[10px] py-0.5 uppercase"
                       >
                         {log.action}
                       </AdminBadge>
                     </AdminTableCell>
                     <AdminTableCell>
                       {log.attemptedRating ? renderStars(log.attemptedRating) : (
-                        <AdminText size="xs" color="secondary">—</AdminText>
+                        <p className="text-xs text-black/20">—</p>
                       )}
                     </AdminTableCell>
                     <AdminTableCell>
-                      <AdminText size="xs" color="secondary">
+                      <p className="text-xs text-black/30">
                         {format(new Date(log.createdAt), "MMM d, HH:mm")}
-                      </AdminText>
+                      </p>
                     </AdminTableCell>
                   </AdminTableRow>
                 ))
@@ -427,14 +410,12 @@ export default function IntegrityPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-border/50 rounded-[32px] p-6 shadow-sm">
-        <AdminPagination
-          currentPage={currentPage}
-          totalItems={total}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-        />
-      </div>
+      <AdminPagination
+        currentPage={currentPage}
+        totalItems={total}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

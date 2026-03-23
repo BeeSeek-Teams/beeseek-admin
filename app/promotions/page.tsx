@@ -1,30 +1,28 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Ticket, 
-  Plus, 
-  RefreshCcw, 
-  Search, 
-  Trash2, 
-  Edit, 
-  CheckCircle2, 
+import {
+  Ticket,
+  Plus,
+  ArrowClockwise,
+  MagnifyingGlass,
+  Trash,
+  PencilSimple,
+  CheckCircle,
   XCircle,
-  Settings2,
-  Calendar,
-  Zap,
+  GearSix,
+  CalendarBlank,
   X,
   Percent,
-  DollarSign,
-  Briefcase
-} from "lucide-react";
+  CurrencyNgn,
+  SpinnerGap
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminInput } from "@/components/AdminInput";
 import { AdminTextArea } from "@/components/AdminTextArea";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
+import { AdminConsentModal } from "@/components/AdminConsentModal";
 import { toast } from "sonner";
 import { Promotion, getPromotions, deletePromotion, createPromotion } from "@/lib/economics";
 import { format } from "date-fns";
@@ -38,6 +36,7 @@ export default function PromotionsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; id: string }>({ open: false, id: "" });
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -59,7 +58,7 @@ export default function PromotionsPage() {
       setPromotions(data);
       setFilteredPromotions(data);
     } catch (err) {
-      toast.error("Failed to load promotions");
+      toast.error("Couldn't load promotions");
     } finally {
       setLoading(false);
     }
@@ -73,8 +72,6 @@ export default function PromotionsPage() {
     e.preventDefault();
     try {
       setIsSaving(true);
-      
-      // Clean up conditions
       const conditions: any = {};
       if (formData.conditions.dayOfWeek) conditions.dayOfWeek = parseInt(formData.conditions.dayOfWeek);
       if (formData.conditions.minAmount) conditions.minAmount = parseInt(formData.conditions.minAmount);
@@ -87,7 +84,7 @@ export default function PromotionsPage() {
         conditions
       });
 
-      toast.success("Promotion rule created successfully");
+      toast.success("Promotion created");
       setShowCreateModal(false);
       setFormData({
         name: "",
@@ -100,17 +97,17 @@ export default function PromotionsPage() {
       });
       fetchData();
     } catch (error) {
-      toast.error("Failed to create promotion. Please check all fields.");
+      toast.error("Failed to create promotion");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this promotion?")) return;
+  const handleDelete = async () => {
     try {
-      await deletePromotion(id);
+      await deletePromotion(deleteModal.id);
       toast.success("Promotion deleted");
+      setDeleteModal({ open: false, id: "" });
       fetchData();
     } catch (err) {
       toast.error("Failed to delete promotion");
@@ -119,168 +116,151 @@ export default function PromotionsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-8 animate-pulse text-center">
-            <RefreshCcw className="animate-spin mx-auto text-primary" size={32} />
-            <AdminText color="secondary">Loading promotion rules...</AdminText>
+      <div className="flex flex-col items-center justify-center py-32 gap-3">
+        <SpinnerGap size={28} weight="bold" className="animate-spin text-primary/30" />
+        <p className="text-sm text-black/25">Loading promotions...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 md:space-y-8 pb-12">
       <AdminHeader
-        title="Promotions & Discounts"
-        description="Manage wallet fee waivers and discount rules for agents and clients."
-        action={
-          <div className="flex gap-3">
-             <AdminButton variant="outline" size="sm" onClick={fetchData}>
-                <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-             </AdminButton>
-             <AdminButton 
-               variant="primary" 
-               size="sm" 
-               className="gap-2"
-               onClick={() => setShowCreateModal(true)}
-             >
-                <Plus size={16} />
-                New Promotion
-             </AdminButton>
-          </div>
-        }
+        title="Promotions"
+        description="Manage fee waivers and discount rules for agents and clients."
       />
 
-      {/* Promotional Inventory */}
-      <div className="bg-white border border-border/50 rounded-[32px] overflow-hidden shadow-sm overflow-x-auto min-w-full">
-        <div className="min-w-[1200px]">
-          <div className="p-6 border-b border-border/50 flex flex-wrap items-center justify-between gap-4 bg-slate-50/50">
-            <div className="flex items-center gap-3">
-                 <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                    <Zap size={18} />
-                 </div>
-                 <AdminText variant="bold">Active Rules Engine</AdminText>
-            </div>
-            <div className="flex items-center gap-2">
-                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                    <input 
-                      placeholder="Search rules..." 
-                      value={searchQuery}
-                      onChange={(e) => {
-                        const q = e.target.value.toLowerCase();
-                        setSearchQuery(q);
-                        if (!q) {
-                          setFilteredPromotions(promotions);
-                        } else {
-                          setFilteredPromotions(promotions.filter(p => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)));
-                        }
-                      }}
-                      className="pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-primary outline-none"
-                    />
-                 </div>
-            </div>
+      {/* Action Bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[220px] max-w-sm">
+          <AdminInput
+            placeholder="Search promotions..."
+            value={searchQuery}
+            onChange={(e) => {
+              const q = e.target.value.toLowerCase();
+              setSearchQuery(q);
+              if (!q) {
+                setFilteredPromotions(promotions);
+              } else {
+                setFilteredPromotions(promotions.filter(p => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)));
+              }
+            }}
+            icon={<MagnifyingGlass size={16} weight="bold" className="text-black/20" />}
+          />
         </div>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          className="p-2.5 bg-white border border-black/5 rounded-xl text-black/30 hover:bg-black/[0.02] transition-colors disabled:opacity-50"
+        >
+          <ArrowClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
+        </button>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+        >
+          <Plus size={16} weight="bold" />
+          New Promotion
+        </button>
+      </div>
 
-        <AdminTable headers={["Promotion Details", "Type", "Conditions", "Priority", "Status", "Created", "Actions"]}>
-          {promotions.length === 0 ? (
-            <AdminTableRow>
-              <AdminTableCell colSpan={7} className="text-center py-20">
-                 <Ticket size={48} className="mx-auto text-slate-200 mb-4" />
-                 <AdminText color="secondary">No promotion rules defined yet.</AdminText>
-              </AdminTableCell>
-            </AdminTableRow>
-          ) : filteredPromotions.length === 0 ? (
-            <AdminTableRow>
-              <AdminTableCell colSpan={7} className="text-center py-20">
-                 <AdminText color="secondary">No promotions match your search.</AdminText>
-              </AdminTableCell>
-            </AdminTableRow>
-          ) : (
-            filteredPromotions.map((promo) => (
-              <AdminTableRow key={promo.id}>
-                <AdminTableCell className="py-6">
-                  <div className="flex flex-col gap-1">
-                    <AdminText variant="bold" size="sm">{promo.name}</AdminText>
-                    <AdminText size="xs" color="secondary" className="line-clamp-1">{promo.description}</AdminText>
-                  </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                   <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl w-fit">
-                      <AdminText size="xs" variant="bold" className="text-[10px] uppercase tracking-wider">
-                        {promo.type?.replace('_', ' ') || 'UNKNOWN'}
-                      </AdminText>
-                   </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                   <div className="flex flex-col gap-1">
-                      {Object.entries(promo.conditions || {}).map(([key, value]: any) => (
-                        <div key={key} className="flex items-center gap-1.5">
-                           <Settings2 size={10} className="text-slate-400" />
-                           <AdminText size="xs" className="text-[10px] text-slate-600">
-                             {key}: <span className="font-bold">{String(value)}</span>
-                           </AdminText>
-                        </div>
-                      ))}
-                      {(!promo.conditions || Object.keys(promo.conditions).length === 0) && (
-                        <AdminText size="xs" color="secondary" className="italic text-[10px]">No conditions</AdminText>
-                      )}
-                   </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                    <AdminBadge variant="secondary" className="font-mono">{promo.priority}</AdminBadge>
-                </AdminTableCell>
-                <AdminTableCell>
-                  <AdminBadge variant={promo.isActive ? "success" : "secondary"} className="gap-1 px-3 py-1 rounded-full border-none">
-                    {promo.isActive ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-                    {promo.isActive ? "Active" : "Paused"}
-                  </AdminBadge>
-                </AdminTableCell>
-                <AdminTableCell>
-                   <div className="flex items-center gap-2 text-slate-400">
-                      <Calendar size={12} />
-                      <AdminText size="xs" className="text-[10px]">{format(new Date(promo.createdAt), "MMM dd, yyyy")}</AdminText>
-                   </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-primary transition-colors">
-                      <Edit size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(promo.id)}
-                      className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+      {/* Table */}
+      <div className="bg-white border border-black/5 rounded-2xl overflow-hidden overflow-x-auto">
+        <div className="min-w-[900px]">
+          <AdminTable headers={["Promotion", "Type", "Conditions", "Priority", "Status", "Created", "Actions"]}>
+            {promotions.length === 0 ? (
+              <AdminTableRow>
+                <AdminTableCell colSpan={7}>
+                  <div className="flex flex-col items-center justify-center py-20 gap-2">
+                    <Ticket size={32} weight="duotone" className="text-black/10" />
+                    <p className="text-sm font-bold text-black/25">No promotions yet</p>
+                    <p className="text-xs text-black/15">Create one to get started.</p>
                   </div>
                 </AdminTableCell>
               </AdminTableRow>
-            ))
-          )}
-        </AdminTable>
+            ) : filteredPromotions.length === 0 ? (
+              <AdminTableRow>
+                <AdminTableCell colSpan={7}>
+                  <div className="flex flex-col items-center justify-center py-20 gap-2">
+                    <MagnifyingGlass size={24} weight="duotone" className="text-black/10" />
+                    <p className="text-sm text-black/25">No promotions match your search.</p>
+                  </div>
+                </AdminTableCell>
+              </AdminTableRow>
+            ) : (
+              filteredPromotions.map((promo) => (
+                <AdminTableRow key={promo.id}>
+                  <AdminTableCell>
+                    <div>
+                      <p className="text-sm font-bold">{promo.name}</p>
+                      <p className="text-[10px] text-black/20 line-clamp-1">{promo.description}</p>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="bg-black/[0.02] border border-black/5 px-2.5 py-1 rounded-lg w-fit">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-black/40">
+                        {promo.type?.replace('_', ' ') || 'UNKNOWN'}
+                      </span>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="flex flex-col gap-0.5">
+                      {Object.entries(promo.conditions || {}).map(([key, value]: any) => (
+                        <div key={key} className="flex items-center gap-1.5">
+                          <GearSix size={10} weight="fill" className="text-black/15" />
+                          <span className="text-[10px] text-black/30">
+                            {key}: <span className="font-bold text-black/50">{String(value)}</span>
+                          </span>
+                        </div>
+                      ))}
+                      {(!promo.conditions || Object.keys(promo.conditions).length === 0) && (
+                        <span className="text-[10px] italic text-black/15">No conditions</span>
+                      )}
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <AdminBadge variant="secondary">{promo.priority}</AdminBadge>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <AdminBadge variant={promo.isActive ? "success" : "secondary"}>
+                      {promo.isActive ? "Active" : "Paused"}
+                    </AdminBadge>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="flex items-center gap-1.5 text-black/20">
+                      <CalendarBlank size={12} weight="fill" />
+                      <span className="text-[10px]">{format(new Date(promo.createdAt), "MMM dd, yyyy")}</span>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setDeleteModal({ open: true, id: promo.id })}
+                        className="p-2 hover:bg-red-50 rounded-lg text-black/20 hover:text-red-500 transition-colors"
+                      >
+                        <Trash size={16} weight="bold" />
+                      </button>
+                    </div>
+                  </AdminTableCell>
+                </AdminTableRow>
+              ))
+            )}
+          </AdminTable>
         </div>
       </div>
 
-       {/* Quick Setup Guide / Concept Alert */}
-       <div className="bg-slate-900 rounded-[32px] p-8 text-white relative overflow-hidden">
-           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
-                     <Settings2 size={32} className="text-white" />
-                </div>
-                <div className="flex-1">
-                     <AdminText variant="bold" size="lg" className="text-white mb-1">How the Rules Engine Works</AdminText>
-                     <AdminText size="sm" className="text-white/60">
-                        The Promotion Rule Evaluator iterates through all active rules by priority. 
-                        The first rule where all conditions match the user session is applied automatically.
-                     </AdminText>
-                </div>
-                <div className="flex flex-wrap gap-2 max-w-xs justify-center md:justify-end">
-                     <span className="bg-white/10 border border-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">dayOfWeek: 5 (Friday)</span>
-                     <span className="bg-white/10 border border-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">minAmount: 50000</span>
-                     <span className="bg-white/10 border border-white/20 px-3 py-1 rounded-lg text-[10px] font-bold">minRating: 4.8</span>
-                </div>
-           </div>
-       </div>
+      {/* Delete Consent Modal */}
+      <AdminConsentModal
+        isOpen={deleteModal.open}
+        onClose={() => setDeleteModal({ open: false, id: "" })}
+        onConfirm={handleDelete}
+        title="Delete promotion?"
+        description="This promotion will be permanently removed and can't be recovered."
+        confirmLabel="Delete"
+        variant="danger"
+      />
 
+      {/* Create Modal */}
       <AnimatePresence>
         {showCreateModal && (
           <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
@@ -289,38 +269,33 @@ export default function PromotionsPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowCreateModal(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-hidden"
+              className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
             >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-                    <Ticket size={24} />
-                  </div>
-                  <div>
-                    <AdminText variant="bold" size="lg">Create Promotion Rule</AdminText>
-                    <AdminText size="xs" color="secondary">Configure a new loyalty or incentive rule.</AdminText>
-                  </div>
+              <div className="p-6 border-b border-black/5 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-black">New Promotion</h2>
+                  <p className="text-xs text-black/30 mt-0.5">Set up a discount or fee waiver rule.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="p-2 hover:bg-white rounded-xl border border-slate-200 shadow-sm transition-all"
+                  className="p-2 hover:bg-black/[0.02] rounded-xl transition-colors"
                 >
-                  <X size={20} className="text-slate-400" />
+                  <X size={20} weight="bold" className="text-black/20" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreate} className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={handleCreate} className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="md:col-span-2">
                     <AdminInput
-                      label="Rule Name"
+                      label="Name"
                       placeholder="e.g. Free Friday Service Fee"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -329,7 +304,7 @@ export default function PromotionsPage() {
                   </div>
                   <div className="md:col-span-2">
                     <AdminTextArea
-                      label="Public Description"
+                      label="Description"
                       placeholder="Visible to agents and clients during checkout..."
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -338,15 +313,15 @@ export default function PromotionsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-foreground ml-1">Reward Type</label>
+                    <label className="text-xs font-bold text-black/40 ml-1">Type</label>
                     <select
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                      className="w-full bg-black/[0.02] border border-black/5 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                     >
                       <option value="PERCENTAGE_DISCOUNT">Percentage Discount (%)</option>
-                      <option value="FLAT_DISCOUNT">Flat Rebate (NGN)</option>
-                      <option value="FEE_WAIVER">Complete Fee Waiver (Free)</option>
+                      <option value="FLAT_DISCOUNT">Flat Discount (NGN)</option>
+                      <option value="FEE_WAIVER">Full Fee Waiver</option>
                     </select>
                   </div>
 
@@ -354,56 +329,56 @@ export default function PromotionsPage() {
                     label={formData.type === 'PERCENTAGE_DISCOUNT' ? "Discount (%)" : "Value (NGN or N/A)"}
                     type="number"
                     disabled={formData.type === 'FEE_WAIVER'}
-                    icon={formData.type === 'PERCENTAGE_DISCOUNT' ? <Percent size={16} /> : <DollarSign size={16} />}
+                    icon={formData.type === 'PERCENTAGE_DISCOUNT' ? <Percent size={16} weight="bold" className="text-black/20" /> : <CurrencyNgn size={16} weight="bold" className="text-black/20" />}
                     value={formData.value}
                     onChange={(e) => setFormData({ ...formData, value: parseInt(e.target.value) })}
                   />
 
-                  <div className="space-y-6 pt-4 border-t border-slate-100 md:col-span-2">
+                  <div className="space-y-4 pt-4 border-t border-black/5 md:col-span-2">
                     <div className="flex items-center gap-2">
-                       <Settings2 size={16} className="text-primary" />
-                       <AdminText variant="bold" size="sm">Rule Conditions (Optional)</AdminText>
+                      <GearSix size={16} weight="fill" className="text-primary" />
+                      <span className="text-sm font-bold">Conditions (Optional)</span>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                       <AdminInput
-                         label="Day of Week (0-6)"
-                         placeholder="5 for Friday"
-                         type="number"
-                         min="0"
-                         max="6"
-                         value={formData.conditions.dayOfWeek}
-                         onChange={(e) => setFormData({ 
-                           ...formData, 
-                           conditions: { ...formData.conditions, dayOfWeek: e.target.value } 
-                         })}
-                       />
-                       <AdminInput
-                         label="Min Job Amount (NGN)"
-                         placeholder="5000"
-                         type="number"
-                         value={formData.conditions.minAmount}
-                         onChange={(e) => setFormData({ 
-                           ...formData, 
-                           conditions: { ...formData.conditions, minAmount: e.target.value } 
-                         })}
-                       />
-                       <AdminInput
-                         label="Min User Rating"
-                         placeholder="4.5"
-                         type="number"
-                         step="0.1"
-                         value={formData.conditions.minRating}
-                         onChange={(e) => setFormData({ 
-                           ...formData, 
-                           conditions: { ...formData.conditions, minRating: e.target.value } 
-                         })}
-                       />
+                      <AdminInput
+                        label="Day of Week (0-6)"
+                        placeholder="5 for Friday"
+                        type="number"
+                        min="0"
+                        max="6"
+                        value={formData.conditions.dayOfWeek}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          conditions: { ...formData.conditions, dayOfWeek: e.target.value } 
+                        })}
+                      />
+                      <AdminInput
+                        label="Min Job Amount (NGN)"
+                        placeholder="5000"
+                        type="number"
+                        value={formData.conditions.minAmount}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          conditions: { ...formData.conditions, minAmount: e.target.value } 
+                        })}
+                      />
+                      <AdminInput
+                        label="Min User Rating"
+                        placeholder="4.5"
+                        type="number"
+                        step="0.1"
+                        value={formData.conditions.minRating}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          conditions: { ...formData.conditions, minRating: e.target.value } 
+                        })}
+                      />
                     </div>
                   </div>
 
                   <AdminInput
-                    label="Internal Priority (Weight)"
+                    label="Priority"
                     type="number"
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
@@ -418,7 +393,7 @@ export default function PromotionsPage() {
                       onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
                       className={cn(
                         "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                        formData.isActive ? "bg-primary" : "bg-slate-200"
+                        formData.isActive ? "bg-primary" : "bg-black/10"
                       )}
                     >
                       <span
@@ -428,27 +403,26 @@ export default function PromotionsPage() {
                         )}
                       />
                     </button>
-                    <AdminText size="sm" variant="bold">Set Rule as Active</AdminText>
+                    <span className="text-sm font-bold">Active on creation</span>
                   </div>
                 </div>
 
-                <div className="flex gap-4 pt-10">
-                  <AdminButton
+                <div className="flex gap-3 pt-8">
+                  <button
                     type="button"
-                    variant="outline"
-                    className="flex-1"
                     onClick={() => setShowCreateModal(false)}
+                    className="flex-1 px-4 py-3 border border-black/5 rounded-xl text-sm font-bold text-black/40 hover:bg-black/[0.02] transition-colors"
                   >
                     Cancel
-                  </AdminButton>
-                  <AdminButton
+                  </button>
+                  <button
                     type="submit"
-                    variant="primary"
-                    className="flex-1"
-                    loading={isSaving}
+                    disabled={isSaving}
+                    className="flex-1 px-4 py-3 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    Activate Rule
-                  </AdminButton>
+                    {isSaving && <SpinnerGap size={16} weight="bold" className="animate-spin" />}
+                    Create Promotion
+                  </button>
                 </div>
               </form>
             </motion.div>

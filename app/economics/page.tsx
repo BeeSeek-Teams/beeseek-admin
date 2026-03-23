@@ -1,21 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  DollarSign, 
-  TrendingUp, 
-  ArrowDownRight, 
-  ArrowUpRight, 
-  RefreshCcw,
-  PieChart,
+import {
+  CurrencyNgn,
+  TrendUp,
+  ArrowClockwise,
   ShieldCheck,
   CreditCard,
   Briefcase,
-  AlertCircle
-} from "lucide-react";
+  SpinnerGap
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { toast } from "sonner";
 import { EconomicsStats, getEconomicsStats } from "@/lib/economics";
 import { cn } from "@/lib/utils";
@@ -30,7 +25,7 @@ export default function EconomicsPage() {
       const data = await getEconomicsStats();
       setStats(data);
     } catch (err) {
-      toast.error("Failed to load economics data");
+      toast.error("Couldn't load economics data");
     } finally {
       setLoading(false);
     }
@@ -42,161 +37,142 @@ export default function EconomicsPage() {
 
   const formatCurrency = (amountKobo: any) => {
     const amount = Number(amountKobo || 0);
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-    }).format(amount / 100);
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount / 100);
   };
 
-  const StatCard = ({ title, value, label, icon: Icon, trend, trendValue, negative }: any) => (
-    <div className="bg-white border border-border/50 p-8 rounded-[32px] shadow-sm hover:shadow-md transition-all group">
-      <div className="flex justify-between items-start mb-6">
+  const StatCard = ({ title, value, label, icon: Icon, negative }: any) => (
+    <div className="bg-white border border-black/5 rounded-2xl p-6">
+      <div className="flex justify-between items-start mb-4">
         <div className={cn(
-          "p-4 rounded-2xl group-hover:scale-110 transition-transform",
-          negative ? "bg-red-50 text-red-600" : "bg-slate-50 text-slate-900"
+          "w-10 h-10 rounded-xl flex items-center justify-center",
+          negative ? "bg-red-50 text-error" : "bg-primary/10 text-primary"
         )}>
-          <Icon size={24} />
+          <Icon size={20} weight="duotone" />
         </div>
-        {trend && (
-          <div className={cn(
-            "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold",
-            trend === 'up' ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
-          )}>
-            {trend === 'up' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-            {trendValue}
-          </div>
-        )}
       </div>
-      <AdminText size="sm" color="secondary" className="mb-1 font-medium">{title}</AdminText>
-      <AdminText variant="bold" className="text-3xl tracking-tight mb-2">{value}</AdminText>
-      <AdminText size="xs" color="secondary" className="opacity-60">{label}</AdminText>
+      <p className="text-[10px] font-bold text-black/25 uppercase tracking-wider mb-1">{title}</p>
+      <p className="text-2xl font-black tracking-tight mb-1">{value}</p>
+      <p className="text-[10px] text-black/20">{label}</p>
     </div>
   );
 
   if (loading) {
     return (
-      <div className="p-8 space-y-8 animate-pulse">
-        <div className="h-12 w-48 bg-slate-100 rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => <div key={i} className="h-48 bg-slate-50 rounded-[32px]" />)}
-        </div>
+      <div className="flex flex-col items-center justify-center py-32 gap-3">
+        <SpinnerGap size={28} weight="bold" className="animate-spin text-primary/30" />
+        <p className="text-sm text-black/25">Loading economics...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 pb-20">
-      <AdminHeader
-        title="Organizational Economics"
-        description="Monitor platform revenue, operational overhead, and net economic position."
-        action={
-          <AdminButton variant="outline" size="sm" className="gap-2" onClick={fetchStats}>
-            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-            Resync Data
-          </AdminButton>
-        }
-      />
-
-      {/* Main Revenue Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <StatCard 
-          title="Gross Platform Revenue" 
-          value={stats ? formatCurrency(stats.revenue.total) : "₦0.00"} 
-          label="Total service fees & commissions earned"
-          icon={TrendingUp}
-          trend="up"
-          trendValue="Live"
+    <div className="space-y-6 md:space-y-8 pb-12">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <AdminHeader
+          title="Economics"
+          description="Platform revenue, withdrawal costs, and net position."
         />
-        <StatCard 
-          title="Withdrawal Net Profit" 
-          value={stats ? formatCurrency(stats.withdrawals.netWithdrawalProfit) : "₦0.00"} 
-          label="Profit/Loss from agent withdrawal fees"
+        <button
+          onClick={fetchStats}
+          disabled={loading}
+          className="p-2.5 bg-white border border-black/5 rounded-xl text-black/30 hover:bg-black/[0.02] transition-colors disabled:opacity-50"
+        >
+          <ArrowClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="Total Revenue"
+          value={stats ? formatCurrency(stats.revenue.total) : "₦0.00"}
+          label="Service fees & commissions earned"
+          icon={TrendUp}
+        />
+        <StatCard
+          title="Withdrawal Profit"
+          value={stats ? formatCurrency(stats.withdrawals.netWithdrawalProfit) : "₦0.00"}
+          label="Fee income minus provider costs"
           icon={CreditCard}
           negative={stats && stats.withdrawals.netWithdrawalProfit < 0}
         />
-        <StatCard 
-          title="Net Org Position" 
-          value={stats ? formatCurrency(stats.netPlatformPosition) : "₦0.00"} 
-          label="Total liquid position for BeeSeek"
+        <StatCard
+          title="Net Position"
+          value={stats ? formatCurrency(stats.netPlatformPosition) : "₦0.00"}
+          label="BeeSeek's total liquid position"
           icon={Briefcase}
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Revenue Breakdown */}
-        <div className="bg-white border border-border/50 rounded-[32px] p-10 shadow-sm relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-[0.03] rotate-12">
-                   <PieChart size={160} />
-             </div>
-          <AdminText variant="bold" size="lg" className="mb-8">Revenue Stream Breakdown</AdminText>
-          <div className="space-y-8">
-            <div className="flex justify-between items-center p-6 bg-slate-50 rounded-[24px]">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary">
-                  <ShieldCheck size={24} />
+        <div className="bg-white border border-black/5 rounded-2xl p-6">
+          <h3 className="text-sm font-black mb-5">Revenue Breakdown</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-4 bg-black/[0.02] rounded-xl border border-black/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary border border-black/5">
+                  <ShieldCheck size={20} weight="duotone" />
                 </div>
                 <div>
-                   <AdminText variant="bold">Client Service Fees</AdminText>
-                   <AdminText size="xs" color="secondary">Standard flat platform fee</AdminText>
+                  <p className="text-sm font-bold">Service Fees</p>
+                  <p className="text-[10px] text-black/20">Flat platform fee from clients</p>
                 </div>
               </div>
-              <AdminText variant="bold" className="text-xl">
+              <p className="text-lg font-black">
                 {stats ? formatCurrency(stats.revenue.serviceFees) : "₦0.00"}
-              </AdminText>
+              </p>
             </div>
 
-            <div className="flex justify-between items-center p-6 bg-slate-50 rounded-[24px]">
-               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-amber-600">
-                  <DollarSign size={24} />
+            <div className="flex justify-between items-center p-4 bg-black/[0.02] rounded-xl border border-black/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 border border-black/5">
+                  <CurrencyNgn size={20} weight="duotone" />
                 </div>
                 <div>
-                   <AdminText variant="bold">Agent Commissions</AdminText>
-                   <AdminText size="xs" color="secondary">% based earnings from contracts</AdminText>
+                  <p className="text-sm font-bold">Agent Commissions</p>
+                  <p className="text-[10px] text-black/20">% based earnings from contracts</p>
                 </div>
               </div>
-              <AdminText variant="bold" className="text-xl">
+              <p className="text-lg font-black">
                 {stats ? formatCurrency(stats.revenue.commissions) : "₦0.00"}
-              </AdminText>
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Operational Overhead */}
-        <div className="bg-white border border-border/50 rounded-[32px] p-10 shadow-sm relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-[0.03] rotate-12">
-                   <AlertCircle size={160} />
-             </div>
-          <AdminText variant="bold" size="lg" className="mb-8">Withdrawal Cost Analysis</AdminText>
-          <div className="space-y-8">
-            <div className="flex justify-between items-center p-6 bg-slate-50 rounded-[24px]">
+        {/* Withdrawal Costs */}
+        <div className="bg-white border border-black/5 rounded-2xl p-6">
+          <h3 className="text-sm font-black mb-5">Withdrawal Costs</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-4 bg-black/[0.02] rounded-xl border border-black/5">
               <div>
-                 <AdminText variant="bold" className="text-slate-600">Fees Collected</AdminText>
-                 <AdminText size="xs" color="secondary">Total withdrawal fees paid by agents</AdminText>
+                <p className="text-sm font-bold">Fees Collected</p>
+                <p className="text-[10px] text-black/20">Withdrawal fees paid by agents</p>
               </div>
-              <AdminText variant="bold" className="text-success text-xl">
+              <p className="text-lg font-black text-success">
                 +{stats ? formatCurrency(stats.withdrawals.feesCollected) : "₦0.00"}
-              </AdminText>
+              </p>
             </div>
 
-            <div className="flex justify-between items-center p-6 bg-slate-50 rounded-[24px] border-l-4 border-red-400">
-               <div>
-                  <AdminText variant="bold" className="text-red-600">Disbursement Costs</AdminText>
-                  <AdminText size="xs" color="secondary">Monnify/Provider fees borne by BeeSeek</AdminText>
-               </div>
-              <AdminText variant="bold" className="text-error text-xl">
+            <div className="flex justify-between items-center p-4 bg-red-50/50 rounded-xl border border-red-100">
+              <div>
+                <p className="text-sm font-bold text-error">Provider Costs</p>
+                <p className="text-[10px] text-black/20">Monnify fees borne by BeeSeek</p>
+              </div>
+              <p className="text-lg font-black text-error">
                 -{stats ? formatCurrency(stats.withdrawals.costsBorne) : "₦0.00"}
-              </AdminText>
+              </p>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
-                 <AdminText variant="bold">Net Operational Position</AdminText>
-                 <div className={cn(
-                   "px-4 py-2 rounded-xl text-lg font-bold",
-                   stats && stats.withdrawals.netWithdrawalProfit >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                 )}>
-                   {stats ? formatCurrency(stats.withdrawals.netWithdrawalProfit) : "₦0.00"}
-                 </div>
+            <div className="pt-3 border-t border-black/5 flex justify-between items-center">
+              <p className="text-sm font-bold">Net Position</p>
+              <div className={cn(
+                "px-3 py-1.5 rounded-xl text-sm font-black",
+                stats && stats.withdrawals.netWithdrawalProfit >= 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+              )}>
+                {stats ? formatCurrency(stats.withdrawals.netWithdrawalProfit) : "₦0.00"}
+              </div>
             </div>
           </div>
         </div>

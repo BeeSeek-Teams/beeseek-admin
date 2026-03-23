@@ -2,30 +2,27 @@
 
 import React, { useEffect, useState } from "react";
 import { 
-  CheckCircle2, 
+  CheckCircle, 
   XCircle, 
   Eye, 
   Clock,
-  AlertCircle,
+  WarningCircle,
   ShieldCheck,
-  RefreshCcw,
-  Search,
-  ChevronDown,
-  ChevronUp,
+  ArrowClockwise,
+  MagnifyingGlass,
+  CaretUp,
   User,
   Phone,
-  Smartphone,
+  DeviceMobile,
   Globe,
-  Calendar,
+  CalendarBlank,
   Hash,
-  Mail,
+  Envelope,
   Shield,
-  ShieldAlert,
-  ShieldOff
-} from "lucide-react";
+  ShieldWarning,
+  SpinnerGap
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
 import { getPendingVerifications, updateVerificationStatus, runBackgroundCheck, PendingVerification, BackgroundCheckResult, ScreeningMatch } from "@/lib/verifications";
@@ -49,7 +46,7 @@ export default function VerificationsPage() {
       setVerifications(data);
       setFilteredVerifications(data);
     } catch (error) {
-      toast.error("Failed to fetch pending verifications");
+      toast.error("Couldn't load verifications");
     } finally {
       setLoading(false);
     }
@@ -63,12 +60,11 @@ export default function VerificationsPage() {
     try {
       setProcessingId(userId);
       await updateVerificationStatus(userId, status);
-      toast.success(`User ${status === 'VERIFIED' ? 'approved' : 'rejected'} successfully`);
-      // Remove from list
+      toast.success(`User ${status === 'VERIFIED' ? 'approved' : 'rejected'}`);
       setVerifications(prev => prev.filter(v => v.id !== userId));
       setFilteredVerifications(prev => prev.filter(v => v.id !== userId));
     } catch (error) {
-      toast.error("Operation failed");
+      toast.error("Couldn't update status");
     } finally {
       setProcessingId(null);
     }
@@ -80,12 +76,12 @@ export default function VerificationsPage() {
       const result = await runBackgroundCheck(userId);
       setBgCheckResults(prev => ({ ...prev, [userId]: result }));
       if (result.success) {
-        toast.success(`Screening complete — Risk: ${result.riskLevel || 'unknown'}, ${result.totalMatches || 0} matches`);
+        toast.success(`Screening done — Risk: ${result.riskLevel || 'unknown'}, ${result.totalMatches || 0} matches`);
       } else {
-        toast.error(`Background check failed: ${result.error}`);
+        toast.error(`Screening failed: ${result.error}`);
       }
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Background check failed");
+      toast.error(error?.response?.data?.message || "Screening failed");
     } finally {
       setBgCheckLoading(null);
     }
@@ -108,162 +104,135 @@ export default function VerificationsPage() {
     }
   };
 
+  const DetailField = ({ icon: Icon, label, value, mono }: { icon: any; label: string; value: string; mono?: boolean }) => (
+    <div className="flex items-start gap-2.5">
+      <Icon size={13} weight="bold" className="text-black/15 mt-0.5 shrink-0" />
+      <div>
+        <p className="text-[10px] text-black/25">{label}</p>
+        <p className={`text-sm ${mono ? "font-mono" : ""}`}>{value}</p>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-end">
-        <AdminHeader 
-          title="Verification Queue" 
-          description="Review and approve identity verification requests from users."
-        />
-        <AdminButton 
-          variant="outline" 
-          size="sm" 
-          className="gap-2"
-          onClick={fetchVerifications}
+    <div className="space-y-6 md:space-y-8">
+      <AdminHeader 
+        title="Verifications" 
+        description="Review and approve identity verification requests."
+      />
+
+      {/* Summary Row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button 
+          onClick={fetchVerifications} 
           disabled={loading}
+          className="p-2.5 bg-white border border-black/5 rounded-xl text-black/30 hover:bg-black/[0.02] transition-colors disabled:opacity-50"
         >
-          <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-          Refresh
-        </AdminButton>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border border-border/50 p-6 rounded-[24px] shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center">
-            <Clock size={24} />
-          </div>
-          <div className="flex items-center gap-3">
-            <AdminText variant="bold" size="xl">{filteredVerifications.length}</AdminText>
-            <AdminText color="secondary" size="xs">Pending Review</AdminText>
-          </div>
-        </div>
-        <div className="bg-white border border-border/50 p-6 rounded-[24px] shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
-             <ShieldCheck size={24} />
+          <ArrowClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
+        </button>
+        <div className="bg-white border border-black/5 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center">
+            <Clock size={18} weight="fill" />
           </div>
           <div>
-            <AdminText variant="bold" size="xl">Real-time</AdminText>
-            <AdminText color="secondary" size="xs">Live Verification Hive</AdminText>
-          </div>
-        </div>
-        <div className="bg-white border border-border/50 p-6 rounded-[24px] shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-error/10 text-error rounded-2xl flex items-center justify-center">
-            <AlertCircle size={24} />
-          </div>
-          <div>
-            <AdminText variant="bold" size="xl">Strict</AdminText>
-            <AdminText color="secondary" size="xs">Compliance Enforced</AdminText>
+            <p className="text-lg font-black">{filteredVerifications.length}</p>
+            <p className="text-[10px] text-black/25">Pending</p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-[24px] border border-border/50 overflow-hidden">
-        <div className="p-4 border-b border-border/40 flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary" />
+      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
+        {/* Search */}
+        <div className="px-5 py-3 border-b border-black/5">
+          <div className="relative max-w-sm">
+            <MagnifyingGlass size={14} weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 text-black/15" />
             <input 
               type="text" 
               placeholder="Search by name or NIN..." 
               value={searchQuery}
               onChange={handleSearch}
-              className="w-full bg-surface border-none rounded-xl py-2 pl-10 pr-4 text-xs focus:ring-1 focus:ring-primary outline-none"
+              className="w-full bg-black/[0.02] border border-black/5 rounded-xl py-2 pl-9 pr-4 text-xs focus:ring-1 focus:ring-primary/20 outline-none transition-all"
             />
           </div>
         </div>
 
-        <AdminTable headers={["Date Submitted", "User Information", "Document No.", "Status", "Actions"]}>
+        <AdminTable headers={["Submitted", "User", "Document", "Status", "Actions"]}>
           {loading ? (
             <AdminTableRow>
               <AdminTableCell colSpan={5}>
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <RefreshCcw size={32} className="animate-spin text-primary/40" />
-                  <AdminText color="secondary" size="sm">Fetching verifications...</AdminText>
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <SpinnerGap size={24} weight="bold" className="animate-spin text-primary/30" />
+                  <p className="text-sm text-black/25">Loading verifications...</p>
                 </div>
               </AdminTableCell>
             </AdminTableRow>
           ) : filteredVerifications.length === 0 ? (
             <AdminTableRow>
               <AdminTableCell colSpan={5}>
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
-                  <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center text-secondary/40">
-                    <CheckCircle2 size={24} />
-                  </div>
-                  <div>
-                    <AdminText variant="bold">All Caught Up!</AdminText>
-                    <AdminText color="secondary" size="xs">There are no pending identity verifications at the moment.</AdminText>
-                  </div>
+                <div className="flex flex-col items-center justify-center py-16 gap-2">
+                  <CheckCircle size={32} weight="duotone" className="text-black/10" />
+                  <p className="text-sm font-bold text-black/25">All caught up!</p>
+                  <p className="text-xs text-black/15">No pending verifications right now.</p>
                 </div>
               </AdminTableCell>
             </AdminTableRow>
           ) : (
             filteredVerifications.map((v) => (
               <React.Fragment key={v.id}>
-              <AdminTableRow onClick={() => setExpandedId(expandedId === v.id ? null : v.id)}>
+              <AdminTableRow className="cursor-pointer" onClick={() => setExpandedId(expandedId === v.id ? null : v.id)}>
                 <AdminTableCell>
-                  <AdminText size="xs" color="secondary">
+                  <p className="text-xs text-black/30">
                     {formatDistanceToNow(new Date(v.createdAt), { addSuffix: true })}
-                  </AdminText>
+                  </p>
                 </AdminTableCell>
                 <AdminTableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-surface border border-border/20 overflow-hidden flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-black/[0.03] border border-black/5 overflow-hidden flex items-center justify-center text-primary font-bold text-[10px]">
                       {v.profileImage ? (
                         <img src={v.profileImage} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <AdminText variant="bold" size="xs">{v.firstName[0]}{v.lastName[0]}</AdminText>
+                        `${v.firstName[0]}${v.lastName[0]}`
                       )}
                     </div>
                     <div>
-                      <AdminText variant="bold" size="sm">{v.firstName} {v.lastName}</AdminText>
-                      <AdminText color="secondary" size="xs">{v.email}</AdminText>
+                      <p className="text-sm font-bold">{v.firstName} {v.lastName}</p>
+                      <p className="text-[10px] text-black/20">{v.email}</p>
                     </div>
                   </div>
                 </AdminTableCell>
                 <AdminTableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="px-2 py-1 bg-surface rounded text-[10px] font-mono border border-border/40">
-                      NIN: •••••••{v.ninNumber?.slice(-4) || '****'}
-                    </div>
-                  </div>
+                  <span className="px-2 py-1 bg-black/[0.02] rounded-md text-[10px] font-mono border border-black/5">
+                    NIN: •••••••{v.ninNumber?.slice(-4) || '****'}
+                  </span>
                 </AdminTableCell>
                 <AdminTableCell>
                   <AdminBadge variant="warning">{v.ninStatus}</AdminBadge>
                 </AdminTableCell>
                 <AdminTableCell>
-                  <div className="flex items-center gap-2">
-                    <AdminButton 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      title={expandedId === v.id ? "Collapse" : "Expand Details"}
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation();
-                        setExpandedId(expandedId === v.id ? null : v.id);
-                      }}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      className="p-2 rounded-lg text-black/20 hover:bg-black/[0.03] hover:text-primary transition-colors"
+                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); setExpandedId(expandedId === v.id ? null : v.id); }}
+                      title={expandedId === v.id ? "Collapse" : "Expand"}
                     >
-                      {expandedId === v.id ? <ChevronUp size={14} /> : <Eye size={14} />}
-                    </AdminButton>
-                    <AdminButton 
-                      variant="primary" 
-                      size="sm" 
-                      className="h-8 py-0 gap-1.5"
+                      {expandedId === v.id ? <CaretUp size={14} weight="bold" /> : <Eye size={14} weight="bold" />}
+                    </button>
+                    <button
+                      className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40"
                       onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleUpdateStatus(v.id, 'VERIFIED'); }}
                       disabled={!!processingId}
                     >
-                      {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                      {processingId === v.id ? <SpinnerGap size={12} weight="bold" className="animate-spin" /> : <CheckCircle size={12} weight="bold" />}
                       Approve
-                    </AdminButton>
-                    <AdminButton 
-                      variant="secondary" 
-                      size="sm" 
-                      className="h-8 py-0 gap-1.5"
+                    </button>
+                    <button
+                      className="flex items-center gap-1 px-3 py-1.5 bg-red-50 text-error text-[11px] font-bold rounded-lg hover:bg-red-100 transition-colors disabled:opacity-40"
                       onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleUpdateStatus(v.id, 'REJECTED'); }}
                       disabled={!!processingId}
                     >
-                      {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <XCircle size={14} />}
+                      <XCircle size={12} weight="bold" />
                       Reject
-                    </AdminButton>
+                    </button>
                   </div>
                 </AdminTableCell>
               </AdminTableRow>
@@ -271,176 +240,94 @@ export default function VerificationsPage() {
               {/* Expanded Detail Row */}
               {expandedId === v.id && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-0">
-                    <div className="bg-surface/50 border border-border/30 rounded-2xl p-6 my-3 animate-in slide-in-from-top-2 duration-200">
+                  <td colSpan={5} className="px-5 py-0">
+                    <div className="bg-black/[0.01] border border-black/5 rounded-2xl p-5 my-2">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Identity */}
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Shield size={16} className="text-primary" />
-                            <AdminText variant="bold" size="sm">Identity</AdminText>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Shield size={14} weight="fill" className="text-primary" />
+                            <p className="text-xs font-bold">Identity</p>
                           </div>
-                          <div className="space-y-3">
-                            <div className="flex items-start gap-3">
-                              <Hash size={14} className="text-secondary mt-0.5 shrink-0" />
-                              <div>
-                                <AdminText size="xs" color="secondary">Full NIN</AdminText>
-                                <AdminText variant="bold" size="sm" className="font-mono">{v.ninNumber || 'N/A'}</AdminText>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                              <User size={14} className="text-secondary mt-0.5 shrink-0" />
-                              <div>
-                                <AdminText size="xs" color="secondary">Full Name</AdminText>
-                                <AdminText variant="bold" size="sm">{v.firstName} {v.lastName}</AdminText>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                              <Mail size={14} className="text-secondary mt-0.5 shrink-0" />
-                              <div>
-                                <AdminText size="xs" color="secondary">Email</AdminText>
-                                <AdminText size="sm">{v.email}</AdminText>
-                              </div>
-                            </div>
-                            {v.phone && (
-                              <div className="flex items-start gap-3">
-                                <Phone size={14} className="text-secondary mt-0.5 shrink-0" />
-                                <div>
-                                  <AdminText size="xs" color="secondary">Phone</AdminText>
-                                  <AdminText size="sm">{v.phone}</AdminText>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          <DetailField icon={Hash} label="Full NIN" value={v.ninNumber || 'N/A'} mono />
+                          <DetailField icon={User} label="Full Name" value={`${v.firstName} ${v.lastName}`} />
+                          <DetailField icon={Envelope} label="Email" value={v.email} />
+                          {v.phone && <DetailField icon={Phone} label="Phone" value={v.phone} />}
                         </div>
 
-                        {/* Account Info */}
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <User size={16} className="text-primary" />
-                            <AdminText variant="bold" size="sm">Account</AdminText>
+                        {/* Account */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <User size={14} weight="fill" className="text-primary" />
+                            <p className="text-xs font-bold">Account</p>
                           </div>
-                          <div className="space-y-3">
-                            <div className="flex items-start gap-3">
-                              <ShieldCheck size={14} className="text-secondary mt-0.5 shrink-0" />
-                              <div>
-                                <AdminText size="xs" color="secondary">Role</AdminText>
-                                <AdminBadge variant={v.role === 'AGENT' ? 'info' : 'secondary'}>{v.role || 'N/A'}</AdminBadge>
-                              </div>
+                          <div className="flex items-start gap-2.5">
+                            <ShieldCheck size={13} weight="bold" className="text-black/15 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-[10px] text-black/25">Role</p>
+                              <AdminBadge variant={v.role === 'AGENT' ? 'info' : 'secondary'}>{v.role || 'N/A'}</AdminBadge>
                             </div>
-                            {v.age && (
-                              <div className="flex items-start gap-3">
-                                <Calendar size={14} className="text-secondary mt-0.5 shrink-0" />
-                                <div>
-                                  <AdminText size="xs" color="secondary">Age</AdminText>
-                                  <AdminText size="sm">{v.age}</AdminText>
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex items-start gap-3">
-                              <Calendar size={14} className="text-secondary mt-0.5 shrink-0" />
-                              <div>
-                                <AdminText size="xs" color="secondary">Submitted</AdminText>
-                                <AdminText size="sm">{format(new Date(v.createdAt), 'PPpp')}</AdminText>
-                              </div>
-                            </div>
-                            {v.lastLoginAt && (
-                              <div className="flex items-start gap-3">
-                                <Clock size={14} className="text-secondary mt-0.5 shrink-0" />
-                                <div>
-                                  <AdminText size="xs" color="secondary">Last Login</AdminText>
-                                  <AdminText size="sm">{format(new Date(v.lastLoginAt), 'PPpp')}</AdminText>
-                                </div>
-                              </div>
-                            )}
                           </div>
+                          {v.age && <DetailField icon={CalendarBlank} label="Age" value={String(v.age)} />}
+                          <DetailField icon={CalendarBlank} label="Submitted" value={format(new Date(v.createdAt), 'PPpp')} />
+                          {v.lastLoginAt && <DetailField icon={Clock} label="Last Login" value={format(new Date(v.lastLoginAt), 'PPpp')} />}
                         </div>
 
-                        {/* Device Info */}
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <Smartphone size={16} className="text-primary" />
-                            <AdminText variant="bold" size="sm">Device</AdminText>
+                        {/* Device */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <DeviceMobile size={14} weight="fill" className="text-primary" />
+                            <p className="text-xs font-bold">Device</p>
                           </div>
-                          <div className="space-y-3">
-                            {v.deviceType && (
-                              <div className="flex items-start gap-3">
-                                <Smartphone size={14} className="text-secondary mt-0.5 shrink-0" />
-                                <div>
-                                  <AdminText size="xs" color="secondary">Type</AdminText>
-                                  <AdminText size="sm">{v.deviceType}</AdminText>
-                                </div>
-                              </div>
-                            )}
-                            {v.deviceModel && (
-                              <div className="flex items-start gap-3">
-                                <Smartphone size={14} className="text-secondary mt-0.5 shrink-0" />
-                                <div>
-                                  <AdminText size="xs" color="secondary">Model</AdminText>
-                                  <AdminText size="sm">{v.deviceModel}</AdminText>
-                                </div>
-                              </div>
-                            )}
-                            {v.lastIpAddress && (
-                              <div className="flex items-start gap-3">
-                                <Globe size={14} className="text-secondary mt-0.5 shrink-0" />
-                                <div>
-                                  <AdminText size="xs" color="secondary">Last IP</AdminText>
-                                  <AdminText size="sm" className="font-mono">{v.lastIpAddress}</AdminText>
-                                </div>
-                              </div>
-                            )}
-                            {!v.deviceType && !v.deviceModel && !v.lastIpAddress && (
-                              <AdminText size="xs" color="secondary">No device info available</AdminText>
-                            )}
-                          </div>
+                          {v.deviceType && <DetailField icon={DeviceMobile} label="Type" value={v.deviceType} />}
+                          {v.deviceModel && <DetailField icon={DeviceMobile} label="Model" value={v.deviceModel} />}
+                          {v.lastIpAddress && <DetailField icon={Globe} label="Last IP" value={v.lastIpAddress} mono />}
+                          {!v.deviceType && !v.deviceModel && !v.lastIpAddress && (
+                            <p className="text-xs text-black/20">No device info available</p>
+                          )}
                         </div>
                       </div>
 
                       {/* Background Check */}
-                      <div className="mt-6 pt-4 border-t border-border/30">
+                      <div className="mt-5 pt-4 border-t border-black/5">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
-                            <Shield size={16} className="text-primary" />
-                            <AdminText variant="bold" size="sm">AML / Criminal Screening</AdminText>
+                            <Shield size={14} weight="fill" className="text-primary" />
+                            <p className="text-xs font-bold">AML / Criminal Screening</p>
                           </div>
-                          <AdminButton
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5"
+                          <button
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-black/5 rounded-lg text-[11px] font-bold text-black/40 hover:bg-black/[0.02] transition-colors disabled:opacity-40"
                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleBackgroundCheck(v.id); }}
                             disabled={!!bgCheckLoading}
                           >
-                            {bgCheckLoading === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <Shield size={14} />}
-                            {bgCheckResults[v.id] ? 'Re-run Screening' : 'Run Screening'}
-                          </AdminButton>
+                            {bgCheckLoading === v.id ? <SpinnerGap size={12} weight="bold" className="animate-spin" /> : <Shield size={12} weight="bold" />}
+                            {bgCheckResults[v.id] ? 'Re-run' : 'Run Screening'}
+                          </button>
                         </div>
 
                         {bgCheckResults[v.id] && (
-                          <div className={`rounded-xl border p-4 ${bgCheckResults[v.id].success ? (bgCheckResults[v.id].riskLevel === 'high' ? 'bg-error/5 border-error/20' : bgCheckResults[v.id].riskLevel === 'medium' ? 'bg-warning/5 border-warning/20' : 'bg-success/5 border-success/20') : 'bg-error/5 border-error/20'}`}>
+                          <div className={`rounded-xl border p-4 ${bgCheckResults[v.id].success ? (bgCheckResults[v.id].riskLevel === 'high' ? 'bg-red-50 border-red-100' : bgCheckResults[v.id].riskLevel === 'medium' ? 'bg-amber-50 border-amber-100' : 'bg-green-50 border-green-100') : 'bg-red-50 border-red-100'}`}>
                             {bgCheckResults[v.id].success ? (
-                              <div className="space-y-4">
-                                {/* Risk Level Header */}
+                              <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     {bgCheckResults[v.id].riskLevel === 'high' ? (
-                                      <ShieldAlert size={16} className="text-error" />
+                                      <ShieldWarning size={16} weight="fill" className="text-error" />
                                     ) : bgCheckResults[v.id].riskLevel === 'medium' ? (
-                                      <ShieldAlert size={16} className="text-warning" />
+                                      <ShieldWarning size={16} weight="fill" className="text-amber-500" />
                                     ) : (
-                                      <ShieldCheck size={16} className="text-success" />
+                                      <ShieldCheck size={16} weight="fill" className="text-success" />
                                     )}
-                                    <AdminText variant="bold" size="sm" className={bgCheckResults[v.id].riskLevel === 'high' ? 'text-error' : bgCheckResults[v.id].riskLevel === 'medium' ? 'text-warning' : 'text-success'}>
-                                      {bgCheckResults[v.id].riskLevel === 'high' ? 'High Risk' : bgCheckResults[v.id].riskLevel === 'medium' ? 'Medium Risk' : 'Low Risk'} — Screening Complete
-                                    </AdminText>
+                                    <p className={`text-sm font-bold ${bgCheckResults[v.id].riskLevel === 'high' ? 'text-error' : bgCheckResults[v.id].riskLevel === 'medium' ? 'text-amber-600' : 'text-success'}`}>
+                                      {bgCheckResults[v.id].riskLevel === 'high' ? 'High Risk' : bgCheckResults[v.id].riskLevel === 'medium' ? 'Medium Risk' : 'Low Risk'}
+                                    </p>
                                   </div>
                                   <AdminBadge variant={bgCheckResults[v.id].riskLevel === 'high' ? 'error' : bgCheckResults[v.id].riskLevel === 'medium' ? 'warning' : 'success'}>
                                     {(bgCheckResults[v.id].totalMatches || 0)} {bgCheckResults[v.id].totalMatches === 1 ? 'Match' : 'Matches'}
                                   </AdminBadge>
                                 </div>
 
-                                {/* Flags */}
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                   <AdminBadge variant={bgCheckResults[v.id].isPEP ? 'error' : 'success'}>
                                     {bgCheckResults[v.id].isPEP ? 'PEP Flagged' : 'Not PEP'}
                                   </AdminBadge>
@@ -452,38 +339,37 @@ export default function VerificationsPage() {
                                   </AdminBadge>
                                 </div>
 
-                                {/* Matches */}
                                 {bgCheckResults[v.id].matches && bgCheckResults[v.id].matches!.length > 0 && (
                                   <div className="space-y-2">
-                                    <AdminText variant="bold" size="xs" color="secondary">Matches Found</AdminText>
+                                    <p className="text-[10px] font-bold text-black/25 uppercase">Matches</p>
                                     {bgCheckResults[v.id].matches!.map((match, idx) => (
-                                      <div key={idx} className="rounded-lg border border-border/20 p-3 bg-background/50">
+                                      <div key={idx} className="rounded-lg border border-black/5 p-3 bg-white/60">
                                         <div className="flex items-center justify-between mb-1">
-                                          <AdminText variant="bold" size="sm">{match.name}</AdminText>
+                                          <p className="text-sm font-bold">{match.name}</p>
                                           <AdminBadge variant={match.matchScore >= 80 ? 'error' : match.matchScore >= 50 ? 'warning' : 'secondary'}>
                                             {match.matchScore}% match
                                           </AdminBadge>
                                         </div>
                                         <div className="flex gap-2 text-xs">
                                           <AdminBadge variant="secondary">{match.category}</AdminBadge>
-                                          <AdminText size="xs" color="secondary">Source: {match.source}</AdminText>
+                                          <span className="text-black/20">Source: {match.source}</span>
                                         </div>
-                                        {match.details && <AdminText size="xs" color="secondary" className="mt-1">{match.details}</AdminText>}
+                                        {match.details && <p className="text-xs text-black/30 mt-1">{match.details}</p>}
                                       </div>
                                     ))}
                                   </div>
                                 )}
 
                                 {bgCheckResults[v.id].reportId && (
-                                  <AdminText size="xs" color="secondary">Report ID: {bgCheckResults[v.id].reportId}</AdminText>
+                                  <p className="text-[10px] text-black/20">Report: {bgCheckResults[v.id].reportId}</p>
                                 )}
                               </div>
                             ) : (
                               <div className="flex items-center gap-3">
-                                <AlertCircle size={16} className="text-error shrink-0" />
+                                <WarningCircle size={16} weight="fill" className="text-error shrink-0" />
                                 <div>
-                                  <AdminText variant="bold" size="sm" className="text-error">Screening Failed</AdminText>
-                                  <AdminText size="xs" color="secondary">{bgCheckResults[v.id].error || 'Unknown error'}</AdminText>
+                                  <p className="text-sm font-bold text-error">Screening Failed</p>
+                                  <p className="text-xs text-black/30">{bgCheckResults[v.id].error || 'Unknown error'}</p>
                                 </div>
                               </div>
                             )}
@@ -492,27 +378,23 @@ export default function VerificationsPage() {
                       </div>
 
                       {/* Quick Actions */}
-                      <div className="mt-6 pt-4 border-t border-border/30 flex items-center justify-end gap-3">
-                        <AdminButton 
-                          variant="primary" 
-                          size="sm" 
-                          className="gap-1.5"
+                      <div className="mt-5 pt-4 border-t border-black/5 flex items-center justify-end gap-2">
+                        <button
+                          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
                           onClick={() => handleUpdateStatus(v.id, 'VERIFIED')}
                           disabled={!!processingId}
                         >
-                          {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                          Approve Verification
-                        </AdminButton>
-                        <AdminButton 
-                          variant="secondary" 
-                          size="sm" 
-                          className="gap-1.5"
+                          {processingId === v.id ? <SpinnerGap size={13} weight="bold" className="animate-spin" /> : <CheckCircle size={13} weight="bold" />}
+                          Approve
+                        </button>
+                        <button
+                          className="flex items-center gap-1.5 px-4 py-2 bg-red-50 text-error text-xs font-bold rounded-xl hover:bg-red-100 transition-colors disabled:opacity-40"
                           onClick={() => handleUpdateStatus(v.id, 'REJECTED')}
                           disabled={!!processingId}
                         >
-                          {processingId === v.id ? <RefreshCcw size={14} className="animate-spin" /> : <XCircle size={14} />}
-                          Reject Verification
-                        </AdminButton>
+                          <XCircle size={13} weight="bold" />
+                          Reject
+                        </button>
                       </div>
                     </div>
                   </td>

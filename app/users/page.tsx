@@ -2,27 +2,27 @@
 
 import React, { useState, useEffect, useCallback } from "react";  
 import { 
-  Search, 
-  MoreHorizontal, 
-  Mail, 
+  MagnifyingGlass, 
+  Envelope, 
   Phone,
-  Ban,
-  RefreshCcw,
-  CheckCircle2,
-  UserPlus,
-} from "lucide-react";
+  Prohibit,
+  ArrowClockwise,
+  CheckCircle,
+  Eye,
+  SpinnerGap
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminInput } from "@/components/AdminInput";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
 import { AdminPagination } from "@/components/AdminPagination";
+import { AdminConsentModal } from "@/components/AdminConsentModal";
 import { getUsers, toggleBlockUser, getUserDetails, User } from "@/lib/users";
 import { AdminUserDetailModal } from "@/components/AdminUserDetailModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import debounce from "lodash/debounce";
+import { cn } from "@/lib/utils";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -36,6 +36,7 @@ export default function UsersPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [blockModal, setBlockModal] = useState<{ userId: string; userName: string; currentStatus: string } | null>(null);
 
   const fetchUsers = useCallback(async (searchQuery = search, role = roleFilter, ninStatus = ninStatusFilter, page = currentPage) => {
     try {
@@ -52,7 +53,7 @@ export default function UsersPage() {
       setUsers(data.items);
       setTotal(data.total);
     } catch (error) {
-      toast.error("Failed to fetch users");
+      toast.error("Couldn't load users");
     } finally {
       setLoading(false);
     }
@@ -96,129 +97,129 @@ export default function UsersPage() {
     fetchUsers(search, roleFilter, ninStatusFilter, page);
   };
 
-  const handleToggleBlock = async (userId: string, userName: string, currentStatus: string) => {
-    const action = currentStatus === 'BLOCKED' ? 'unblock' : 'block';
-    if (!confirm(`Are you sure you want to ${action} ${userName}?`)) return;
-    
+  const handleToggleBlock = async () => {
+    if (!blockModal) return;
+    const { userId, currentStatus } = blockModal;
     try {
       setProcessingId(userId);
       const result = await toggleBlockUser(userId);
-      toast.success(`User updated to ${result.newStatus}`);
+      toast.success(`User ${result.newStatus === 'BLOCKED' ? 'blocked' : 'unblocked'}`);
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: result.newStatus } : u));
     } catch (error) {
-      toast.error("Failed to update user status");
+      toast.error("Couldn't update user");
     } finally {
       setProcessingId(null);
+      setBlockModal(null);
     }
   };
 
   const handleViewDetails = async (userId: string) => {
     try {
-      setProcessingId(userId); // Use this to show loading on the specific row if needed
+      setProcessingId(userId);
       const details = await getUserDetails(userId);
       setSelectedUser(details);
       setShowDetailModal(true);
     } catch (error) {
-      toast.error("Failed to fetch user details");
+      toast.error("Couldn't load user details");
     } finally {
       setProcessingId(null);
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <AdminUserDetailModal 
         user={selectedUser} 
         isOpen={showDetailModal} 
         onClose={() => setShowDetailModal(false)} 
         onUpdate={fetchUsers}
       />
-      <AdminHeader 
-        title="User Control Hive" 
-        description={`Manage all ${total} registered BeeSeek users.`}
-        action={
-          <AdminButton className="gap-2" variant="primary">
-            <UserPlus size={18} />
-            Registration Log
-          </AdminButton>
+
+      <AdminConsentModal
+        isOpen={!!blockModal}
+        onClose={() => setBlockModal(null)}
+        onConfirm={handleToggleBlock}
+        title={blockModal?.currentStatus === 'BLOCKED' ? 'Unblock this user?' : 'Block this user?'}
+        description={blockModal?.currentStatus === 'BLOCKED' 
+          ? `${blockModal?.userName} will regain full access to their account.`
+          : `${blockModal?.userName} will lose all access immediately. They won't be able to use the app.`
         }
+        confirmLabel={blockModal?.currentStatus === 'BLOCKED' ? 'Unblock' : 'Block User'}
+        variant={blockModal?.currentStatus === 'BLOCKED' ? 'primary' : 'danger'}
+        loading={!!processingId}
+      />
+
+      <AdminHeader 
+        title="Users" 
+        description={`${total} registered users on BeeSeek.`}
       />
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white border border-border/50 p-6 rounded-[24px] shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white border border-black/5 p-4 md:p-5 rounded-2xl">
         <div className="w-full md:max-w-md">
           <AdminInput
             placeholder="Search by name, email or phone..."
             value={search}
             onChange={handleSearchChange}
-            icon={<Search size={18} />}
+            icon={<MagnifyingGlass size={16} weight="bold" className="text-black/20" />}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <AdminButton 
-            variant="outline" 
-            size="sm" 
-            className="gap-2"
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          <button 
             onClick={() => fetchUsers()}
             disabled={loading}
+            className="p-2.5 bg-white border border-black/5 rounded-xl text-black/30 hover:bg-black/[0.02] transition-colors disabled:opacity-50"
           >
-            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </AdminButton>
-          <div className="flex border border-border/50 rounded-xl overflow-hidden bg-surface">
-            <button 
-              onClick={() => handleRoleFilter("ALL")}
-              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors ${roleFilter === 'ALL' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              All
-            </button>
-            <button 
-              onClick={() => handleRoleFilter("CLIENT")}
-              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${roleFilter === 'CLIENT' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              Clients
-            </button>
-            <button 
-              onClick={() => handleRoleFilter("AGENT")}
-              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${roleFilter === 'AGENT' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              Agents
-            </button>
+            <ArrowClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
+          </button>
+
+          <div className="flex bg-black/[0.04] rounded-xl overflow-hidden">
+            {["ALL", "CLIENT", "AGENT"].map((role) => (
+              <button 
+                key={role}
+                onClick={() => handleRoleFilter(role)}
+                className={cn(
+                  "px-3 py-2 text-xs font-bold transition-colors",
+                  roleFilter === role ? "bg-primary text-white" : "text-black/30 hover:text-black/50"
+                )}
+              >
+                {role === "ALL" ? "All" : role === "CLIENT" ? "Clients" : "Agents"}
+              </button>
+            ))}
           </div>
 
-          <div className="flex border border-border/50 rounded-xl overflow-hidden bg-surface">
-            <button 
-              onClick={() => handleNinFilter("ALL")}
-              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors ${ninStatusFilter === 'ALL' ? 'bg-black text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              Any NIN
-            </button>
-            <button 
-              onClick={() => handleNinFilter("NOT_SUBMITTED")}
-              title="Users without NIN submitted"
-              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${ninStatusFilter === 'NOT_SUBMITTED' ? 'bg-error text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              Missing NIN
-            </button>
-            <button 
-              onClick={() => handleNinFilter("VERIFIED")}
-              className={`px-3 md:px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${ninStatusFilter === 'VERIFIED' ? 'bg-success text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              Verified
-            </button>
+          <div className="flex bg-black/[0.04] rounded-xl overflow-hidden">
+            {([
+              { key: "ALL", label: "Any NIN" },
+              { key: "NOT_SUBMITTED", label: "Missing" },
+              { key: "VERIFIED", label: "Verified" },
+            ]).map(({ key, label }) => (
+              <button 
+                key={key}
+                onClick={() => handleNinFilter(key)}
+                className={cn(
+                  "px-3 py-2 text-xs font-bold transition-colors",
+                  ninStatusFilter === key 
+                    ? (key === "NOT_SUBMITTED" ? "bg-error text-white" : key === "VERIFIED" ? "bg-success text-white" : "bg-black text-white")
+                    : "text-black/30 hover:text-black/50"
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-[24px] border border-border/50 overflow-hidden">
-        <AdminTable headers={["User Identity", "Professional Profile", "Core Statistics", "Entity Status", "Onboarding", "Hive Controls"]}>
+      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
+        <AdminTable headers={["User", "Contact", "Role", "Status", "Joined", "Actions"]}>
           {loading ? (
             <AdminTableRow>
               <AdminTableCell colSpan={6}>
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <RefreshCcw size={32} className="animate-spin text-primary/40" />
-                  <AdminText color="secondary" size="sm">Scanning the Hive...</AdminText>
+                  <SpinnerGap size={24} weight="bold" className="animate-spin text-primary/30" />
+                  <p className="text-sm text-black/30">Loading users...</p>
                 </div>
               </AdminTableCell>
             </AdminTableRow>
@@ -226,12 +227,10 @@ export default function UsersPage() {
             <AdminTableRow>
               <AdminTableCell colSpan={6}>
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center text-secondary/20">
-                    <Search size={32} />
-                  </div>
+                  <MagnifyingGlass size={40} weight="duotone" className="text-black/10" />
                   <div className="text-center">
-                    <AdminText variant="bold">No users found</AdminText>
-                    <AdminText color="secondary" size="xs">Try adjusting your filters or search keywords.</AdminText>
+                    <p className="text-sm font-bold text-black/30">No users found</p>
+                    <p className="text-xs text-black/20 mt-1">Try different filters or search terms.</p>
                   </div>
                 </div>
               </AdminTableCell>
@@ -245,7 +244,7 @@ export default function UsersPage() {
               >
                 <AdminTableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-surface border border-border/20 flex items-center justify-center text-primary font-bold text-sm overflow-hidden">
+                    <div className="w-9 h-9 rounded-full bg-black/[0.03] border border-black/5 flex items-center justify-center text-primary font-bold text-xs overflow-hidden">
                       {user.profileImage ? (
                         <img src={user.profileImage} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -253,20 +252,20 @@ export default function UsersPage() {
                       )}
                     </div>
                     <div>
-                      <AdminText variant="bold" size="sm">{user.firstName} {user.lastName}</AdminText>
-                      <AdminText color="secondary" size="xs">UID: {user.id.slice(0, 8)}</AdminText>
+                      <p className="text-sm font-bold">{user.firstName} {user.lastName}</p>
+                      <p className="text-[10px] text-black/20 font-mono">{user.id.slice(0, 8)}</p>
                     </div>
                   </div>
                 </AdminTableCell>
                 <AdminTableCell>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-secondary">
-                      <Mail size={12} className="text-primary/40" />
-                      <AdminText size="xs" className="truncate max-w-[150px]">{user.email}</AdminText>
+                    <div className="flex items-center gap-1.5">
+                      <Envelope size={11} weight="bold" className="text-black/15" />
+                      <p className="text-xs text-black/40 truncate max-w-[150px]">{user.email}</p>
                     </div>
-                    <div className="flex items-center gap-2 text-secondary">
-                      <Phone size={12} className="text-primary/40" />
-                      <AdminText size="xs">{user.phoneNumber}</AdminText>
+                    <div className="flex items-center gap-1.5">
+                      <Phone size={11} weight="bold" className="text-black/15" />
+                      <p className="text-xs text-black/40">{user.phoneNumber}</p>
                     </div>
                   </div>
                 </AdminTableCell>
@@ -281,37 +280,41 @@ export default function UsersPage() {
                   </AdminBadge>
                 </AdminTableCell>
                 <AdminTableCell>
-                  <AdminText size="xs" color="secondary">
+                  <p className="text-xs text-black/30">
                     {format(new Date(user.createdAt), "MMM dd, yyyy")}
-                  </AdminText>
+                  </p>
                 </AdminTableCell>
                 <AdminTableCell>
-                  <div className="flex items-center gap-2">
-                    <AdminButton 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      title="User History"
-                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      className="p-2 rounded-lg text-black/20 hover:bg-black/[0.03] hover:text-primary transition-colors"
+                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleViewDetails(user.id); }}
+                      title="View details"
                     >
-                      <MoreHorizontal size={14} />
-                    </AdminButton>
-                    <AdminButton 
-                      variant={user.status === 'BLOCKED' ? 'success' : 'secondary'} 
-                      size="sm" 
-                      className="h-8 py-0 gap-1.5"
-                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleToggleBlock(user.id, `${user.firstName} ${user.lastName}`, user.status); }}
+                      <Eye size={15} weight="bold" />
+                    </button>
+                    <button
+                      className={cn(
+                        "p-2 rounded-lg transition-colors",
+                        user.status === 'BLOCKED' 
+                          ? "text-black/20 hover:bg-green-50 hover:text-success" 
+                          : "text-black/20 hover:bg-red-50 hover:text-error"
+                      )}
+                      onClick={(e: React.MouseEvent) => { 
+                        e.stopPropagation(); 
+                        setBlockModal({ userId: user.id, userName: `${user.firstName} ${user.lastName}`, currentStatus: user.status }); 
+                      }}
                       disabled={processingId === user.id}
+                      title={user.status === 'BLOCKED' ? 'Unblock' : 'Block'}
                     >
                       {processingId === user.id ? (
-                        <RefreshCcw size={14} className="animate-spin" />
+                        <SpinnerGap size={15} weight="bold" className="animate-spin" />
                       ) : user.status === 'BLOCKED' ? (
-                        <CheckCircle2 size={14} />
+                        <CheckCircle size={15} weight="bold" />
                       ) : (
-                        <Ban size={14} />
+                        <Prohibit size={15} weight="bold" />
                       )}
-                      {user.status === 'BLOCKED' ? 'Unblock' : 'Block'}
-                    </AdminButton>
+                    </button>
                   </div>
                 </AdminTableCell>
               </AdminTableRow>

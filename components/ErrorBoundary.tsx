@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
-import { AlertTriangle, RefreshCcw } from "lucide-react";
+import { WarningCircle, ArrowClockwise } from "@phosphor-icons/react";
 
 interface Props {
   children: ReactNode;
@@ -36,22 +36,18 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-surface p-8">
-          <div className="max-w-md w-full text-center space-y-6">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-error/10 flex items-center justify-center text-error">
-              <AlertTriangle size={32} />
-            </div>
-            <h2 className="text-xl font-bold text-foreground">
-              Something went wrong
-            </h2>
-            <p className="text-sm text-secondary leading-relaxed">
+        <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-8">
+          <div className="text-center">
+            <WarningCircle size={48} weight="duotone" className="text-black/10 mx-auto" />
+            <p className="text-sm font-bold text-black/30 mt-3">Something went wrong</p>
+            <p className="text-xs text-black/20 mt-1 max-w-sm mx-auto">
               {this.state.error?.message || "An unexpected error occurred."}
             </p>
             <button
               onClick={this.handleReset}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-bold text-xs mt-5 hover:opacity-90 transition-opacity"
             >
-              <RefreshCcw size={16} />
+              <ArrowClockwise size={14} weight="bold" />
               Try Again
             </button>
           </div>

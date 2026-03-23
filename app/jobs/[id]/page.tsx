@@ -6,30 +6,23 @@ import {
   MapPin, 
   Clock, 
   User, 
-  Calendar, 
+  CalendarBlank, 
   ShieldCheck, 
-  Info,
-  CheckCircle2,
+  CheckCircle,
   XCircle,
-  AlertCircle,
+  WarningCircle,
   Phone,
-  Mail,
-  ExternalLink,
-  ChevronRight,
-  DollarSign,
+  CurrencyDollar,
   Package,
   Wrench,
-  Navigation
-} from "lucide-react";
+  Copy,
+} from "@phosphor-icons/react";
 import { useRouter, useParams } from "next/navigation";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminBadge } from "@/components/AdminBadge";
 import { toast } from "sonner";
 import { getJob, Job, JobStatus, JobStep } from "@/lib/jobs";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 export default function JobDetailPage() {
   const router = useRouter();
@@ -42,8 +35,8 @@ export default function JobDetailPage() {
       setLoading(true);
       const data = await getJob(id as string);
       setJob(data);
-    } catch (err) {
-      toast.error("Failed to load job details");
+    } catch {
+      toast.error("Couldn't load job details");
       router.push("/jobs");
     } finally {
       setLoading(false);
@@ -63,26 +56,26 @@ export default function JobDetailPage() {
   };
 
   const forensics = [
-    { label: "Payment Escrowed", date: job?.paidAt, step: JobStep.ALL_SET },
-    { label: "Materials Purchased", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
-    { label: "Transit Started", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
-    { label: "Agent Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
+    { label: "Payment Held", date: job?.paidAt, step: JobStep.ALL_SET },
+    { label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
+    { label: "On the Way", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
+    { label: "Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
     { label: "Work Started", date: job?.startedAt, step: JobStep.STARTED },
-    { label: "Work Finished", date: job?.finishedAt, step: JobStep.FINISHED },
-    { label: "Agent Completed", date: job?.completedAt, step: JobStep.HOME_SAFE },
-    { label: "Return Safe", date: job?.homeSafeAt, step: JobStep.HOME_SAFE },
+    { label: "Work Done", date: job?.finishedAt, step: JobStep.FINISHED },
+    { label: "Job Completed", date: job?.completedAt, step: JobStep.HOME_SAFE },
+    { label: "Home Safe", date: job?.homeSafeAt, step: JobStep.HOME_SAFE },
   ];
 
   if (loading) {
     return (
-      <div className="p-8 space-y-8 animate-pulse">
-        <div className="h-10 w-48 bg-slate-100 rounded-xl" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-2 space-y-6">
-              <div className="h-64 bg-slate-50 rounded-[32px]" />
-              <div className="h-96 bg-slate-50 rounded-[32px]" />
-           </div>
-           <div className="h-screen bg-slate-50 rounded-[32px]" />
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 w-40 bg-black/[0.04] rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="h-52 bg-black/[0.02] rounded-2xl" />
+            <div className="h-80 bg-black/[0.02] rounded-2xl" />
+          </div>
+          <div className="h-96 bg-black/[0.02] rounded-2xl" />
         </div>
       </div>
     );
@@ -96,268 +89,243 @@ export default function JobDetailPage() {
     Number(job.contract.serviceFee || 0) + 
     (job.contract.materials?.reduce((sum, m) => sum + Number(m.cost || 0), 0) || 0)
   );
-
   const displayTotal = job.contract.totalAmount > 0 ? job.contract.totalAmount : calculatedTotal;
 
   return (
-    <div className="space-y-8 pb-20">
-      <div className="flex items-center gap-4">
-        <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-          <ArrowLeft size={20} />
+    <div className="space-y-6 md:space-y-8">
+      {/* Back + Header */}
+      <div className="flex items-center gap-3">
+        <button onClick={() => router.back()} className="p-2 hover:bg-black/[0.03] rounded-xl transition-colors">
+          <ArrowLeft size={18} weight="bold" className="text-black/40" />
         </button>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-3">
-             <AdminText variant="bold" size="xl">Job Details</AdminText>
-             <AdminBadge variant={
-                job.status === JobStatus.COMPLETED ? "success" : 
-                job.status === JobStatus.CANCELLED ? "error" : 
-                job.status === JobStatus.ESCALATED ? "error" :
-                job.status === JobStatus.ACTIVE ? "primary" :
-                "secondary"
-             }>
-                {job.status}
-             </AdminBadge>
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-lg font-black text-primary">Job Details</h1>
+            <AdminBadge variant={
+              job.status === JobStatus.COMPLETED ? "success" : 
+              job.status === JobStatus.CANCELLED ? "error" : 
+              job.status === JobStatus.ESCALATED ? "error" :
+              job.status === JobStatus.ACTIVE ? "primary" :
+              "secondary"
+            }>
+              {job.status}
+            </AdminBadge>
           </div>
-          <AdminText size="xs" color="secondary">Case Ref: {job.id}</AdminText>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <p className="text-[10px] font-mono text-black/25">{job.id}</p>
+            <button onClick={() => { navigator.clipboard.writeText(job.id); toast.success("Copied"); }} className="text-black/20 hover:text-primary transition-colors">
+              <Copy size={10} weight="bold" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          {/* Main Contract Card */}
-          <div className="bg-white border border-border/50 rounded-[32px] p-8 shadow-sm">
-             <div className="flex justify-between items-start mb-8">
-                <div className="flex items-center gap-4">
-                   <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/5 shadow-sm">
-                      <Package size={32} />
-                   </div>
-                   <div>
-                      <AdminText variant="bold" size="lg">{job.contract.details}</AdminText>
-                      <div className="flex items-center gap-2">
-                         <Calendar size={12} className="text-slate-400" />
-                         <AdminText size="xs" color="secondary">{format(new Date(job.contract.workDate), "EEEE, MMM dd, yyyy")}</AdminText>
-                         <AdminText size="xs" color="secondary" className="px-2 border-l border-slate-200">{job.contract.startTime}</AdminText>
-                      </div>
-                   </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          {/* Contract Card */}
+          <div className="bg-white border border-black/5 rounded-2xl p-5 md:p-6 space-y-5">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Package size={24} weight="duotone" />
                 </div>
-                <div className="text-right">
-                   <AdminText size="xs" color="secondary" className="mb-1">Service Value</AdminText>
-                   <AdminText variant="bold" size="xl" className="text-primary">{formatCurrency(displayTotal)}</AdminText>
+                <div>
+                  <p className="text-sm font-bold text-primary">{job.contract.details}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <CalendarBlank size={12} weight="bold" className="text-black/20" />
+                    <p className="text-[10px] font-bold text-black/25">{format(new Date(job.contract.workDate), "EEEE, MMM dd, yyyy")}</p>
+                    <span className="text-black/10">·</span>
+                    <p className="text-[10px] font-bold text-black/25">{job.contract.startTime}</p>
+                  </div>
                 </div>
-             </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-black/25">TOTAL VALUE</p>
+                <p className="text-xl font-black text-primary">{formatCurrency(displayTotal)}</p>
+              </div>
+            </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-100 pt-8 mt-4">
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2">
-                       <MapPin size={16} className="text-primary" />
-                       <AdminText variant="bold" size="sm">Service Location</AdminText>
-                   </div>
-                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group cursor-pointer hover:border-primary/20 transition-all">
-                      <AdminText size="sm" className="mb-2 leading-relaxed">{job.contract.address}</AdminText>
-                      <button className="flex items-center gap-1.5 text-primary text-[10px] uppercase font-bold tracking-wider">
-                         <Navigation size={10} />
-                         View Coordination Map
-                      </button>
-                   </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-black/[0.03] pt-5">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={14} weight="bold" className="text-primary" />
+                  <p className="text-xs font-bold text-black/40">Location</p>
                 </div>
+                <div className="p-3 bg-black/[0.02] rounded-xl">
+                  <p className="text-xs text-black/40 leading-relaxed">{job.contract.address}</p>
+                </div>
+              </div>
 
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2">
-                       <Info size={16} className="text-primary" />
-                       <AdminText variant="bold" size="sm">Access Protocol</AdminText>
-                   </div>
-                   <div className="p-4 bg-slate-900 rounded-2xl border border-white/10 shadow-lg shadow-slate-200">
-                      <AdminText size="xs" className="text-white/60 mb-1">Arrival Code (Client Secure Pin)</AdminText>
-                      <AdminText variant="bold" size="xl" className="text-white tracking-[0.5em] font-mono">{job.arrivalCode}</AdminText>
-                   </div>
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-black/40">Arrival Code</p>
+                <div className="p-3 bg-primary rounded-xl">
+                  <p className="text-lg font-black text-white tracking-[0.4em] font-mono text-center">{job.arrivalCode}</p>
                 </div>
-             </div>
+              </div>
+            </div>
           </div>
 
-          {/* Forensics / Timeline Section */}
-          <div className="bg-white border border-border/50 rounded-[32px] p-8 shadow-sm overflow-hidden relative">
-             <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
-                <ShieldCheck size={200} />
-             </div>
-             <AdminText variant="bold" size="lg" className="mb-8 flex items-center gap-2">
-                <ShieldCheck className="text-primary" />
-                Legal Forensic Timeline
-             </AdminText>
+          {/* Timeline */}
+          <div className="bg-white border border-black/5 rounded-2xl p-5 md:p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <ShieldCheck size={18} weight="duotone" className="text-primary" />
+              <p className="text-sm font-black text-primary">Job Timeline</p>
+            </div>
              
-             <div className="space-y-0">
-                {forensics.map((point, i) => {
-                   const isCompleted = !!point.date;
-                   return (
-                      <div key={i} className="flex gap-6 pb-8 last:pb-0 relative group">
-                         {i !== forensics.length - 1 && (
-                            <div className={cn(
-                               "absolute left-[13px] top-[26px] bottom-0 w-0.5",
-                               isCompleted ? "bg-primary" : "bg-slate-100"
-                            )} />
-                         )}
-                         <div className={cn(
-                            "w-7 h-7 rounded-full flex items-center justify-center border-2 z-10 transition-all duration-500",
-                            isCompleted ? "bg-primary border-primary text-white scale-110" : "bg-white border-slate-200 text-slate-300"
-                         )}>
-                            {isCompleted ? <CheckCircle2 size={14} /> : i + 1}
-                         </div>
-                         <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                               <AdminText variant="bold" size="sm" className={cn(isCompleted ? "text-slate-900" : "text-slate-400")}>
-                                  {point.label}
-                               </AdminText>
-                               {point.date && (
-                                  <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg">
-                                     <Clock size={10} className="text-slate-400" />
-                                     <AdminText size="xs" className="text-[10px] font-mono">{format(new Date(point.date), "HH:mm:ss")}</AdminText>
-                                  </div>
-                               )}
-                            </div>
-                            {point.date ? (
-                               <AdminText size="xs" color="secondary">{format(new Date(point.date), "PPP")}</AdminText>
-                            ) : (
-                               <AdminText size="xs" className="text-slate-300 italic">Pending execution...</AdminText>
-                            )}
-                         </div>
-                      </div>
-                   );
-                })}
-             </div>
+            <div className="space-y-0">
+              {forensics.map((point, i) => {
+                const isCompleted = !!point.date;
+                return (
+                  <div key={i} className="flex gap-4 pb-6 last:pb-0 relative">
+                    {i !== forensics.length - 1 && (
+                      <div className={`absolute left-[11px] top-[24px] bottom-0 w-px ${isCompleted ? "bg-primary/30" : "bg-black/[0.04]"}`} />
+                    )}
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 text-[10px] font-bold shrink-0 ${
+                      isCompleted 
+                        ? "bg-primary text-white" 
+                        : "bg-black/[0.04] text-black/20"
+                    }`}>
+                      {isCompleted ? <CheckCircle size={14} weight="fill" /> : i + 1}
+                    </div>
+                    <div className="flex-1 flex items-center justify-between min-h-[24px]">
+                      <p className={`text-xs font-bold ${isCompleted ? "text-black/60" : "text-black/20"}`}>
+                        {point.label}
+                      </p>
+                      {point.date && (
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={10} weight="bold" className="text-black/15" />
+                          <p className="text-[10px] font-mono text-black/25">{format(new Date(point.date), "HH:mm · MMM dd")}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Cancellation Info (If applicable) */}
+          {/* Cancellation Info */}
           {job.status === JobStatus.CANCELLED && job.cancellationAudit && (
-             <div className="bg-red-50 border border-red-100 rounded-[32px] p-8 shadow-sm">
-                <div className="flex items-start gap-4">
-                   <div className="p-3 bg-red-100 rounded-2xl text-red-600">
-                      <XCircle size={24} />
-                   </div>
-                   <div>
-                      <AdminText variant="bold" size="lg" className="text-red-900 mb-1">Termination Audit</AdminText>
-                      <AdminText size="sm" className="text-red-700/80 leading-relaxed mb-6">
-                         This job was terminated before completion. All financial reversals have been logged.
-                      </AdminText>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <div className="space-y-1">
-                            <AdminText size="xs" className="text-red-900/50 uppercase font-bold">Reason for Cancellation</AdminText>
-                            <AdminText variant="bold" className="text-red-900">{job.cancellationAudit.reason}</AdminText>
-                         </div>
-                         <div className="space-y-1">
-                            <AdminText size="xs" className="text-red-900/50 uppercase font-bold">Category</AdminText>
-                            <AdminBadge variant="error">{job.cancellationAudit.category}</AdminBadge>
-                         </div>
-                         <div className="space-y-1">
-                            <AdminText size="xs" className="text-red-900/50 uppercase font-bold">Terminated By</AdminText>
-                            <AdminText variant="bold" className="text-red-900">{job.cancellationAudit.cancelledBy.firstName} {job.cancellationAudit.cancelledBy.lastName}</AdminText>
-                         </div>
-                         <div className="space-y-1">
-                            <AdminText size="xs" className="text-red-900/50 uppercase font-bold">Timestamp</AdminText>
-                            <AdminText variant="bold" className="text-red-900">{format(new Date(job.cancellationAudit.createdAt), "PPP p")}</AdminText>
-                         </div>
-                      </div>
-                   </div>
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-5 md:p-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 bg-red-100 rounded-xl text-red-600">
+                  <XCircle size={20} weight="fill" />
                 </div>
-             </div>
+                <div className="space-y-4 flex-1">
+                  <div>
+                    <p className="text-sm font-black text-red-900">Job Cancelled</p>
+                    <p className="text-xs text-red-700/60 mt-1">All payments have been reversed.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-white/60 p-3 rounded-xl">
+                      <p className="text-[10px] font-bold text-red-900/40">REASON</p>
+                      <p className="text-xs font-bold text-red-900 mt-1">{job.cancellationAudit.reason}</p>
+                    </div>
+                    <div className="bg-white/60 p-3 rounded-xl">
+                      <p className="text-[10px] font-bold text-red-900/40">CATEGORY</p>
+                      <div className="mt-1"><AdminBadge variant="error">{job.cancellationAudit.category}</AdminBadge></div>
+                    </div>
+                    <div className="bg-white/60 p-3 rounded-xl">
+                      <p className="text-[10px] font-bold text-red-900/40">CANCELLED BY</p>
+                      <p className="text-xs font-bold text-red-900 mt-1">{job.cancellationAudit.cancelledBy.firstName} {job.cancellationAudit.cancelledBy.lastName}</p>
+                    </div>
+                    <div className="bg-white/60 p-3 rounded-xl">
+                      <p className="text-[10px] font-bold text-red-900/40">WHEN</p>
+                      <p className="text-xs font-bold text-red-900 mt-1">{format(new Date(job.cancellationAudit.createdAt), "PPP p")}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 
-        <div className="space-y-8">
-          {/* Party Details */}
-          <div className="bg-white border border-border/50 rounded-[32px] p-6 shadow-sm overflow-hidden min-h-fit">
-             <AdminText variant="bold" className="mb-6 flex items-center gap-2">
-                <User size={18} className="text-primary" />
-                Involved Parties
-             </AdminText>
+        <div className="space-y-4 md:space-y-6">
+          {/* People */}
+          <div className="bg-white border border-black/5 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <User size={16} weight="duotone" className="text-primary" />
+              <p className="text-sm font-black text-primary">People</p>
+            </div>
              
-             <div className="space-y-6">
-                <div>
-                   <AdminText size="xs" color="secondary" className="mb-3 uppercase font-bold tracking-widest text-[8px]">The Client</AdminText>
-                   <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <div className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-400">
-                         {job.contract.client.firstName[0]}{job.contract.client.lastName[0]}
-                      </div>
-                      <div className="flex-1">
-                         <AdminText variant="bold" size="sm">{job.contract.client.firstName} {job.contract.client.lastName}</AdminText>
-                         <div className="flex items-center gap-3 mt-1">
-                            <Phone size={10} className="text-slate-400" />
-                            <AdminText size="xs" className="text-[10px] text-slate-500">{job.contract.client.phoneNumber}</AdminText>
-                         </div>
-                      </div>
-                      <button className="text-primary hover:scale-110 transition-transform">
-                         <Mail size={16} />
-                      </button>
-                   </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-bold text-black/25 mb-2">CLIENT</p>
+                <div className="flex items-center gap-3 bg-black/[0.02] p-3 rounded-xl">
+                  <div className="w-10 h-10 rounded-full bg-white border border-black/5 flex items-center justify-center text-xs font-black text-black/30">
+                    {job.contract.client.firstName[0]}{job.contract.client.lastName[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-black/60">{job.contract.client.firstName} {job.contract.client.lastName}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Phone size={10} weight="bold" className="text-black/15" />
+                      <p className="text-[10px] text-black/25">{job.contract.client.phoneNumber}</p>
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                <div className="border-t border-slate-100 pt-6">
-                   <AdminText size="xs" color="secondary" className="mb-3 uppercase font-bold tracking-widest text-[8px]">The Appointed Agent</AdminText>
-                   <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/5 flex items-center justify-center font-bold text-primary">
-                         {job.contract.agent.firstName[0]}{job.contract.agent.lastName[0]}
-                      </div>
-                      <div className="flex-1">
-                         <AdminText variant="bold" size="sm">{job.contract.agent.firstName} {job.contract.agent.lastName}</AdminText>
-                         <div className="flex items-center gap-3 mt-1">
-                            <Phone size={10} className="text-slate-400" />
-                            <AdminText size="xs" className="text-[10px] text-slate-500">{job.contract.agent.phoneNumber}</AdminText>
-                         </div>
-                      </div>
-                      <button className="text-primary hover:scale-110 transition-transform">
-                         <Mail size={16} />
-                      </button>
-                   </div>
+              <div>
+                <p className="text-[10px] font-bold text-black/25 mb-2">AGENT</p>
+                <div className="flex items-center gap-3 bg-primary/[0.04] p-3 rounded-xl">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/5 flex items-center justify-center text-xs font-black text-primary">
+                    {job.contract.agent.firstName[0]}{job.contract.agent.lastName[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-black/60">{job.contract.agent.firstName} {job.contract.agent.lastName}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Phone size={10} weight="bold" className="text-black/15" />
+                      <p className="text-[10px] text-black/25">{job.contract.agent.phoneNumber}</p>
+                    </div>
+                  </div>
                 </div>
-             </div>
+              </div>
+            </div>
           </div>
 
-          {/* Financial Summary */}
-          <div className="bg-slate-50 border border-border/50 rounded-[32px] p-6 shadow-sm overflow-hidden">
-             <AdminText variant="bold" className="mb-6 flex items-center gap-2 text-slate-800">
-                <DollarSign size={18} className="text-slate-800" />
-                Node Unit Economics
-             </AdminText>
+          {/* Financials */}
+          <div className="bg-white border border-black/5 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <CurrencyDollar size={16} weight="duotone" className="text-primary" />
+              <p className="text-sm font-black text-primary">Payment Breakdown</p>
+            </div>
              
-             <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-slate-200/50">
-                   <AdminText size="xs" color="secondary">Base Workmanship</AdminText>
-                   <AdminText size="sm" variant="bold">{formatCurrency(job.contract.workmanshipCost)}</AdminText>
+            <div className="space-y-0">
+              {[
+                { label: "Workmanship", value: formatCurrency(job.contract.workmanshipCost) },
+                { label: "Transport", value: formatCurrency(job.contract.transportFare) },
+                { label: "Service Fee", value: formatCurrency(job.contract.serviceFee), highlight: true },
+                { label: "Commission", value: `-${formatCurrency(job.contract.commissionAmount)}`, warn: true },
+              ].map((row, i) => (
+                <div key={i} className="flex justify-between items-center py-2.5 border-b border-black/[0.03] last:border-0">
+                  <p className="text-xs text-black/30">{row.label}</p>
+                  <p className={`text-xs font-bold ${row.highlight ? "text-primary" : row.warn ? "text-amber-600" : "text-black/60"}`}>{row.value}</p>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-200/50">
-                   <AdminText size="xs" color="secondary">Logistics / Transport</AdminText>
-                   <AdminText size="sm" variant="bold">{formatCurrency(job.contract.transportFare)}</AdminText>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-200/50">
-                   <AdminText size="xs" color="secondary">Service Fee (Platform)</AdminText>
-                   <AdminText size="sm" variant="bold" className="text-primary">{formatCurrency(job.contract.serviceFee)}</AdminText>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-200/50">
-                   <AdminText size="xs" color="secondary">Agent Commission</AdminText>
-                   <AdminText size="sm" variant="bold" className="text-amber-600">-{formatCurrency(job.contract.commissionAmount)}</AdminText>
-                </div>
-                <div className="flex justify-between items-center py-4 bg-white px-4 rounded-xl border border-slate-200 mt-6 shadow-sm">
-                   <AdminText variant="bold" size="sm">Net Settlement</AdminText>
-                   <AdminText variant="bold" size="md" className="text-slate-900">{formatCurrency(displayTotal)}</AdminText>
-                </div>
-             </div>
+              ))}
+              <div className="flex justify-between items-center py-3 bg-black/[0.02] px-3 rounded-xl mt-3">
+                <p className="text-xs font-black text-black/40">Total</p>
+                <p className="text-sm font-black text-primary">{formatCurrency(displayTotal)}</p>
+              </div>
+            </div>
           </div>
 
-          {/* Material Procurement (If available) */}
+          {/* Materials */}
           {job.contract.materials && job.contract.materials.length > 0 && (
-             <div className="bg-white border border-border/50 rounded-[32px] p-6 shadow-sm">
-                <AdminText variant="bold" className="mb-6 flex items-center gap-2">
-                   <Wrench size={18} className="text-primary" />
-                   Material Inventory
-                </AdminText>
-                <div className="space-y-3">
-                   {job.contract.materials.map((m, i) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                         <AdminText size="xs" variant="bold" className="text-slate-600 uppercase tracking-tight">{m.item}</AdminText>
-                         <AdminText size="xs" variant="bold">{formatCurrency(m.cost)}</AdminText>
-                      </div>
-                   ))}
-                </div>
-             </div>
+            <div className="bg-white border border-black/5 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Wrench size={16} weight="duotone" className="text-primary" />
+                <p className="text-sm font-black text-primary">Materials</p>
+              </div>
+              <div className="space-y-2">
+                {job.contract.materials.map((m, i) => (
+                  <div key={i} className="flex justify-between items-center py-2 px-3 bg-black/[0.02] rounded-xl">
+                    <p className="text-xs font-bold text-black/40">{m.item}</p>
+                    <p className="text-xs font-bold text-black/60">{formatCurrency(m.cost)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>

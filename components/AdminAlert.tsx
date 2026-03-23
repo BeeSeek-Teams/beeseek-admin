@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from "lucide-react";
+import { X, CheckCircle, WarningCircle, Info, Warning } from "@phosphor-icons/react";
 import { AdminText } from "./AdminText";
 
 export type AlertType = "success" | "error" | "info" | "warning";
@@ -32,28 +32,32 @@ export const AdminAlert = ({
 
   const variants = {
     success: {
-      bg: "bg-success/10",
-      border: "border-success/20",
-      icon: <CheckCircle className="text-success" size={20} />,
+      bg: "bg-green-50",
+      border: "border-green-100",
+      icon: <CheckCircle weight="fill" className="text-success" size={20} />,
       titleColor: "text-success",
+      textColor: "text-green-700",
     },
     error: {
-      bg: "bg-error/10",
-      border: "border-error/20",
-      icon: <AlertCircle className="text-error" size={20} />,
+      bg: "bg-red-50",
+      border: "border-red-100",
+      icon: <WarningCircle weight="fill" className="text-error" size={20} />,
       titleColor: "text-error",
+      textColor: "text-red-700",
     },
     warning: {
-      bg: "bg-warning/10",
-      border: "border-warning/20",
-      icon: <AlertTriangle className="text-warning" size={20} />,
+      bg: "bg-amber-50",
+      border: "border-amber-100",
+      icon: <Warning weight="fill" className="text-warning" size={20} />,
       titleColor: "text-warning",
+      textColor: "text-amber-700",
     },
     info: {
-      bg: "bg-primary/10",
-      border: "border-primary/20",
-      icon: <Info className="text-primary" size={20} />,
-      titleColor: "text-primary",
+      bg: "bg-blue-50",
+      border: "border-blue-100",
+      icon: <Info weight="fill" className="text-secondary" size={20} />,
+      titleColor: "text-secondary",
+      textColor: "text-blue-700",
     },
   };
 
@@ -61,25 +65,25 @@ export const AdminAlert = ({
 
   return (
     <div
-      className={`flex items-start gap-4 p-4 rounded-2xl border ${current.bg} ${current.border} shadow-sm animate-in fade-in slide-in-from-top-4 duration-300 ${className}`}
+      className={`flex items-start gap-3 p-4 rounded-xl border ${current.bg} ${current.border} ${className}`}
     >
-      <div className="mt-0.5">{current.icon}</div>
-      <div className="flex-1">
+      <div className="mt-0.5 shrink-0">{current.icon}</div>
+      <div className="flex-1 min-w-0">
         {title && (
           <AdminText variant="bold" size="sm" className={current.titleColor}>
             {title}
           </AdminText>
         )}
-        <AdminText size="sm" className="text-white/80">
+        <AdminText size="sm" className={current.textColor}>
           {message}
         </AdminText>
       </div>
       {onClose && (
         <button
           onClick={onClose}
-          className="p-1 hover:bg-white/5 rounded-full transition-colors opacity-60 hover:opacity-100"
+          className="p-1 hover:bg-black/5 rounded-lg transition-colors shrink-0"
         >
-          <X size={16} className="text-white" />
+          <X size={14} className="text-black/30" />
         </button>
       )}
     </div>

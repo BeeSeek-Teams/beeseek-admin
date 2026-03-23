@@ -2,26 +2,24 @@
 
 import React from "react";
 import { 
-  Users, 
-  ShieldCheck, 
-  TrendingUp, 
-  CheckCircle2,
-  FileText,
+  Users,
+  TrendUp,
   Briefcase,
-  Activity,
-  AlertCircle,
-  RefreshCcw
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { AdminText } from "@/components/AdminText";
+  ShieldCheck,
+  ChatCircle,
+  ActivityIcon,
+  ArrowClockwise,
+  ArrowRight,
+  CheckCircle,
+  WarningCircle,
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminButton } from "@/components/AdminButton";
 import { useAuthStore } from "@/store/useAuthStore";
 import { getDashboardStats, DashboardStats } from "@/lib/analytics";
 import { getTransactionStats, TransactionStats } from "@/lib/transactions";
 import { getSupportStats, SupportStats } from "@/lib/support";
 import { toast } from "sonner";
-import { MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
@@ -30,206 +28,157 @@ export default function DashboardPage() {
   const [supportStats, setSupportStats] = React.useState<SupportStats | null>(null);
   const [loading, setLoading] = React.useState(true);
 
-  React.useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const [dashboard, transactions, support] = await Promise.all([
-          getDashboardStats(),
-          getTransactionStats(),
-          getSupportStats(),
-        ]);
-        setDashboardStats(dashboard);
-        setTxStats(transactions);
-        setSupportStats(support);
-      } catch (err) {
-        toast.error("Failed to fetch dashboard statistics");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, []);
-
-  // Calculate growth or status indicators
-  const getStatusColor = (value: number, threshold: number = 0) => {
-    return value > threshold ? 'text-success' : value === 0 ? 'text-slate-400' : 'text-warning';
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const [dashboard, transactions, support] = await Promise.all([
+        getDashboardStats(),
+        getTransactionStats(),
+        getSupportStats(),
+      ]);
+      setDashboardStats(dashboard);
+      setTxStats(transactions);
+      setSupportStats(support);
+    } catch {
+      toast.error("Couldn't load dashboard data");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  React.useEffect(() => { fetchStats(); }, []);
+
   const stats = [
-    { 
-      label: "Total Users", 
-      value: loading ? "..." : dashboardStats?.totalUsers.toLocaleString() || "0", 
-      icon: Users,
-      color: "bg-blue-500",
-      subtext: "All platform members"
-    },
-    { 
-      label: "Active Jobs", 
-      value: loading ? "..." : (dashboardStats?.activeJobs || 0).toLocaleString(), 
-      icon: TrendingUp,
-      color: "bg-primary",
-      subtext: "Jobs in progress"
-    },
-    { 
-      label: "Total Jobs", 
-      value: loading ? "..." : (dashboardStats?.totalJobs || 0).toLocaleString(), 
-      icon: Briefcase,
-      color: "bg-orange-500",
-      subtext: "All-time jobs"
-    },
-    { 
-      label: "Pending Verifications", 
-      value: loading ? "..." : (dashboardStats?.pendingVerifications || 0).toString(), 
-      icon: ShieldCheck,
-      color: "bg-amber-500",
-      subtext: "Awaiting KYC",
-      highlight: (dashboardStats?.pendingVerifications || 0) > 0
-    },
+    { label: "Total Users", value: dashboardStats?.totalUsers || 0, icon: Users, color: "bg-blue-50 text-blue-600" },
+    { label: "Active Jobs", value: dashboardStats?.activeJobs || 0, icon: TrendUp, color: "bg-green-50 text-green-600" },
+    { label: "All-Time Jobs", value: dashboardStats?.totalJobs || 0, icon: Briefcase, color: "bg-primary/10 text-primary" },
+    { label: "Pending KYC", value: dashboardStats?.pendingVerifications || 0, icon: ShieldCheck, color: "bg-amber-50 text-amber-600", warn: (dashboardStats?.pendingVerifications || 0) > 0 },
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 md:space-y-8">
       <AdminHeader 
-        title={`Welcome back, ${user?.firstName || 'Admin'}`} 
-        description="Here's a summary of the hive's activity today."
+        title={`Hey, ${user?.firstName || 'Admin'}`} 
+        description="Here's what's happening across the platform."
         action={
-          <AdminButton variant="outline" size="sm" className="gap-2" onClick={() => window.location.reload()}>
-            <RefreshCcw size={16} />
+          <button
+            onClick={fetchStats}
+            className="flex items-center gap-2 bg-white border border-black/5 px-4 py-2.5 rounded-xl font-bold text-xs text-black/40 hover:bg-black/[0.02] transition-colors"
+          >
+            <ArrowClockwise size={14} weight="bold" />
             Refresh
-          </AdminButton>
+          </button>
         }
       />
 
-      {/* Primary Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <div 
-            key={i} 
-            className={cn(
-              "bg-background border border-border p-6 rounded-3xl shadow-sm hover:shadow-md transition-all group",
-              stat.highlight && "border-amber-300/50 bg-amber-50/30"
-            )}
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className={cn("p-3 rounded-xl text-white transition-transform group-hover:scale-110", stat.color)}>
-                <stat.icon size={24} />
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {stats.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={i} className="bg-white p-4 md:p-5 rounded-2xl border border-black/5 space-y-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}>
+                <Icon size={20} weight="duotone" />
+              </div>
+              <div>
+                <p className="text-2xl md:text-3xl font-black text-primary">
+                  {loading ? "—" : stat.value.toLocaleString()}
+                </p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <p className="text-[10px] font-bold text-black/25">{stat.label}</p>
+                  {stat.warn && <WarningCircle size={12} weight="fill" className="text-amber-500" />}
+                </div>
               </div>
             </div>
-            <div>
-              <p className="text-xs font-medium text-muted uppercase tracking-wider">{stat.label}</p>
-              <h3 className="text-4xl font-bold text-foreground mt-2">{stat.value}</h3>
-              <p className="text-xs text-slate-500 mt-2">{stat.subtext}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Support Tickets Overview */}
-      <div className="bg-background border border-border rounded-3xl p-8 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6">
+        {/* Support Tickets */}
+        <div className="lg:col-span-3 bg-white p-5 md:p-6 rounded-2xl border border-black/5 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <ChatCircle size={20} weight="duotone" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-primary">Support Tickets</p>
+                <p className="text-[10px] font-bold text-black/25">Live overview</p>
+              </div>
+            </div>
+            <Link
+              href="/support"
+              className="flex items-center gap-1.5 text-xs font-bold text-black/30 hover:text-primary transition-colors"
+            >
+              View All <ArrowRight size={12} weight="bold" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Total", value: supportStats?.total || 0, color: "text-primary" },
+              { label: "Open", value: supportStats?.open || 0, color: "text-amber-600" },
+              { label: "In Progress", value: supportStats?.inProgress || 0, color: "text-blue-600" },
+              { label: "Resolved", value: supportStats?.resolved || 0, color: "text-green-600" },
+            ].map((item, j) => (
+              <div key={j} className="bg-black/[0.02] p-3 rounded-xl">
+                <p className="text-[10px] font-bold text-black/25">{item.label}</p>
+                <p className={`text-lg font-black mt-1 ${item.color}`}>
+                  {loading ? "—" : item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Transaction Health */}
+        <div className="lg:col-span-2 bg-white p-5 md:p-6 rounded-2xl border border-black/5 space-y-5">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <MessageSquare size={20} />
+            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
+              <ActivityIcon size={20} weight="duotone" />
             </div>
             <div>
-              <AdminText variant="bold" size="lg">Support Tickets</AdminText>
-              <AdminText size="xs" color="secondary">Live ticket overview</AdminText>
+              <p className="text-sm font-black text-primary">Transactions</p>
+              <p className="text-[10px] font-bold text-black/25">Completion rate</p>
             </div>
           </div>
-          <AdminButton variant="outline" size="sm" onClick={() => window.location.href = '/support'}>
-            View All
-          </AdminButton>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <AdminText size="xs" color="secondary" variant="bold">Total</AdminText>
-            <AdminText size="lg" variant="bold" className="mt-2">{supportStats?.total || 0}</AdminText>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <AdminText size="xs" color="secondary" variant="bold">Open</AdminText>
-            <AdminText size="lg" variant="bold" className="mt-2 text-amber-600">{supportStats?.open || 0}</AdminText>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <AdminText size="xs" color="secondary" variant="bold">In Progress</AdminText>
-            <AdminText size="lg" variant="bold" className="mt-2 text-blue-600">{supportStats?.inProgress || 0}</AdminText>
-          </div>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <AdminText size="xs" color="secondary" variant="bold">Resolved</AdminText>
-            <AdminText size="lg" variant="bold" className="mt-2 text-emerald-600">{supportStats?.resolved || 0}</AdminText>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between items-end">
+              <p className="text-3xl font-black text-primary">{txStats?.successRate || 0}%</p>
+              <p className="text-[10px] font-bold text-black/25">Success Rate</p>
+            </div>
+            <div className="w-full bg-black/[0.04] rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-green-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${txStats?.successRate || 0}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-green-600">
+              <CheckCircle size={12} weight="fill" />
+              Processing normally
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Secondary Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Transaction Success Rate */}
-        <div className="bg-background border border-border rounded-3xl p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-success/10 rounded-lg text-success">
-              <Activity size={20} />
-            </div>
-            <div>
-              <AdminText variant="bold" size="lg">Transaction Health</AdminText>
-              <AdminText size="xs" color="secondary">Platform completion rate</AdminText>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <AdminText size="sm" variant="bold">Success Rate</AdminText>
-                <AdminText size="sm" variant="bold" className="text-success">{txStats?.successRate || 0}%</AdminText>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-success to-success/70 h-full transition-all duration-500 rounded-full"
-                  style={{ width: `${txStats?.successRate || 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-2">
-              <CheckCircle2 size={12} />
-              Transactions processing smoothly
-            </div>
-          </div>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="bg-background border border-border rounded-3xl p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-              <FileText size={20} />
-            </div>
-            <div>
-              <AdminText variant="bold" size="lg">Platform Status</AdminText>
-              <AdminText size="xs" color="secondary">Real-time overview</AdminText>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-              <AdminText size="sm">Active Users</AdminText>
-              <AdminText size="sm" variant="bold" className={getStatusColor(dashboardStats?.totalUsers || 0, 1)}>
-                {loading ? "—" : dashboardStats?.totalUsers || 0}
-              </AdminText>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-              <AdminText size="sm">Jobs In Progress</AdminText>
-              <AdminText size="sm" variant="bold" className={getStatusColor(dashboardStats?.activeJobs || 0)}>
-                {loading ? "—" : dashboardStats?.activeJobs || 0}
-              </AdminText>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-              <AdminText size="sm">Pending Reviews</AdminText>
+      {/* Quick Status */}
+      <div className="bg-white p-5 md:p-6 rounded-2xl border border-black/5">
+        <p className="text-sm font-black text-primary mb-4">Quick Status</p>
+        <div className="space-y-2">
+          {[
+            { label: "Registered users", value: loading ? "—" : (dashboardStats?.totalUsers || 0).toLocaleString() },
+            { label: "Jobs in progress", value: loading ? "—" : (dashboardStats?.activeJobs || 0).toLocaleString() },
+            { label: "Pending identity reviews", value: loading ? "—" : (dashboardStats?.pendingVerifications || 0).toString(), warn: (dashboardStats?.pendingVerifications || 0) > 0  },
+          ].map((row, k) => (
+            <div key={k} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-black/[0.01] transition-colors">
+              <p className="text-xs font-medium text-black/40">{row.label}</p>
               <div className="flex items-center gap-2">
-                <AdminText size="sm" variant="bold" className={getStatusColor(dashboardStats?.pendingVerifications || 0, 1)}>
-                  {loading ? "—" : dashboardStats?.pendingVerifications || 0}
-                </AdminText>
-                {(dashboardStats?.pendingVerifications || 0) > 0 && (
-                  <AlertCircle size={14} className="text-amber-500" />
-                )}
+                <p className="text-sm font-black text-primary">{row.value}</p>
+                {row.warn && <WarningCircle size={14} weight="fill" className="text-amber-500" />}
               </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

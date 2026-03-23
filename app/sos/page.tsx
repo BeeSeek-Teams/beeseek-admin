@@ -3,18 +3,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Siren,
-  RefreshCcw,
+  ArrowClockwise,
   MapPin,
   Phone,
-  Battery,
-  CheckCircle2,
+  BatteryFull,
+  BatteryLow,
+  CheckCircle,
   Clock,
-  ExternalLink,
-  User as UserIcon,
-} from "lucide-react";
+  ArrowSquareOut,
+  User,
+  SpinnerGap
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
 import { AdminPagination } from "@/components/AdminPagination";
@@ -66,7 +66,7 @@ export default function SosPage() {
       setAlerts(data.items);
       setTotal(data.total);
     } catch {
-      toast.error("Failed to fetch SOS alerts");
+      toast.error("Couldn't load SOS alerts");
     } finally {
       setLoading(false);
     }
@@ -100,190 +100,184 @@ export default function SosPage() {
     }
   };
 
+  const filters: StatusFilter[] = ["ALL", "SENT", "RESOLVED"];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 pb-12">
       <AdminHeader
         title="SOS Alerts"
-        description="Emergency alerts triggered by users during active jobs"
+        description="Emergency alerts triggered by users during active jobs."
       />
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {(["ALL", "SENT", "RESOLVED"] as StatusFilter[]).map((f) => (
-          <AdminButton
+      <div className="flex items-center gap-2 flex-wrap">
+        {filters.map((f) => (
+          <button
             key={f}
-            variant={statusFilter === f ? "primary" : "ghost"}
-            size="sm"
             onClick={() => { setStatusFilter(f); setCurrentPage(1); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+              statusFilter === f
+                ? "bg-primary text-white"
+                : "bg-white border border-black/5 text-black/40 hover:bg-black/[0.02]"
+            }`}
           >
             {f === "ALL" ? "All" : f === "SENT" ? "Active" : "Resolved"}
-          </AdminButton>
+          </button>
         ))}
         <div className="ml-auto">
-          <AdminButton variant="ghost" size="sm" onClick={() => fetchAlerts()} icon={<RefreshCcw className="w-4 h-4" />}>
-            Refresh
-          </AdminButton>
+          <button
+            onClick={() => fetchAlerts()}
+            disabled={loading}
+            className="p-2.5 bg-white border border-black/5 rounded-xl text-black/30 hover:bg-black/[0.02] transition-colors disabled:opacity-50"
+          >
+            <ArrowClockwise size={16} weight="bold" className={loading ? "animate-spin" : ""} />
+          </button>
         </div>
       </div>
 
       {/* Table */}
-      <AdminTable headers={["User", "Location", "Contact", "Battery", "Status", "When", "Actions"]}>
-        {loading ? (
-          <AdminTableRow>
-            <AdminTableCell colSpan={7}>
-              <div className="flex justify-center py-12">
-                <RefreshCcw className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            </AdminTableCell>
-          </AdminTableRow>
-        ) : alerts.length === 0 ? (
-          <AdminTableRow>
-            <AdminTableCell colSpan={7}>
-              <div className="text-center py-12">
-                <Siren className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
-                <AdminText color="secondary">No SOS alerts found</AdminText>
-              </div>
-            </AdminTableCell>
-          </AdminTableRow>
-        ) : (
-          alerts.map((alert) => (
-            <AdminTableRow key={alert.id}>
-              {/* User */}
-              <AdminTableCell>
-                <div className="flex items-center gap-2">
-                  <UserIcon className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <AdminText variant="bold" size="sm">{alert.userName}</AdminText>
-                    <AdminText size="xs" color="secondary">
-                      {alert.userRole} · {alert.userPhone || "No phone"}
-                    </AdminText>
+      <div className="bg-white border border-black/5 rounded-2xl overflow-hidden overflow-x-auto">
+        <div className="min-w-[950px]">
+          <AdminTable headers={["User", "Location", "Emergency Contact", "Battery", "Status", "When", "Actions"]}>
+            {loading ? (
+              <AdminTableRow>
+                <AdminTableCell colSpan={7}>
+                  <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <SpinnerGap size={24} weight="bold" className="animate-spin text-primary/30" />
+                    <p className="text-sm text-black/25">Loading alerts...</p>
                   </div>
-                </div>
-              </AdminTableCell>
-
-              {/* Location */}
-              <AdminTableCell>
-                <div className="max-w-[200px]">
-                  <AdminText size="xs" color="secondary" className="truncate block">
-                    {alert.address || "Unknown"}
-                  </AdminText>
-                  <a
-                    href={`https://www.google.com/maps?q=${alert.lat},${alert.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
-                  >
-                    <MapPin className="w-3 h-3" /> View Map <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </AdminTableCell>
-
-              {/* Contact */}
-              <AdminTableCell>
-                <div className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                  <div>
-                    <AdminText size="sm">{alert.contactName || "—"}</AdminText>
-                    <AdminText size="xs" color="secondary">{alert.contactPhone || "—"}</AdminText>
+                </AdminTableCell>
+              </AdminTableRow>
+            ) : alerts.length === 0 ? (
+              <AdminTableRow>
+                <AdminTableCell colSpan={7}>
+                  <div className="flex flex-col items-center justify-center py-20 gap-2">
+                    <Siren size={32} weight="duotone" className="text-black/10" />
+                    <p className="text-sm font-bold text-black/25">No SOS alerts found</p>
+                    <p className="text-xs text-black/15">All clear for now.</p>
                   </div>
-                </div>
-              </AdminTableCell>
-
-              {/* Battery */}
-              <AdminTableCell>
-                <div className="flex items-center gap-1.5">
-                  <Battery className={`w-4 h-4 ${alert.batteryLevel <= 20 ? "text-red-500" : "text-green-500"}`} />
-                  <AdminText size="sm">{alert.batteryLevel}%</AdminText>
-                </div>
-              </AdminTableCell>
-
-              {/* Status */}
-              <AdminTableCell>
-                <AdminBadge variant={statusColor(alert.status) as any}>
-                  {alert.status}
-                </AdminBadge>
-                {alert.resolvedByName && (
-                  <AdminText size="xs" color="secondary" className="mt-1">
-                    by {alert.resolvedByName}
-                  </AdminText>
-                )}
-              </AdminTableCell>
-
-              {/* When */}
-              <AdminTableCell>
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <div>
-                    <AdminText size="xs">
-                      {formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}
-                    </AdminText>
-                    <AdminText size="xs" color="secondary">
-                      {format(new Date(alert.createdAt), "dd MMM yyyy, HH:mm")}
-                    </AdminText>
-                  </div>
-                </div>
-              </AdminTableCell>
-
-              {/* Actions */}
-              <AdminTableCell>
-                {alert.status === "SENT" ? (
-                  noteModalId === alert.id ? (
-                    <div className="flex flex-col gap-2 min-w-[180px]">
-                      <input
-                        type="text"
-                        placeholder="Admin note (optional)"
-                        value={noteInput}
-                        onChange={(e) => setNoteInput(e.target.value)}
-                        className="text-xs border border-border rounded-lg px-3 py-1.5 bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
-                      />
-                      <div className="flex gap-2">
-                        <AdminButton
-                          size="sm"
-                          variant="primary"
-                          onClick={() => handleResolve(alert.id)}
-                          loading={resolvingId === alert.id}
-                          icon={<CheckCircle2 className="w-4 h-4" />}
-                        >
-                          Confirm
-                        </AdminButton>
-                        <AdminButton
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => { setNoteModalId(null); setNoteInput(""); }}
-                        >
-                          Cancel
-                        </AdminButton>
+                </AdminTableCell>
+              </AdminTableRow>
+            ) : (
+              alerts.map((alert) => (
+                <AdminTableRow key={alert.id}>
+                  <AdminTableCell>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-black/[0.03] border border-black/5 flex items-center justify-center">
+                        <User size={14} weight="bold" className="text-black/20" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold">{alert.userName}</p>
+                        <p className="text-[10px] text-black/20">{alert.userRole} · {alert.userPhone || "No phone"}</p>
                       </div>
                     </div>
-                  ) : (
-                    <AdminButton
-                      size="sm"
-                      variant="primary"
-                      onClick={() => setNoteModalId(alert.id)}
-                      icon={<CheckCircle2 className="w-4 h-4" />}
-                    >
-                      Resolve
-                    </AdminButton>
-                  )
-                ) : (
-                  <AdminText size="xs" color="secondary">
-                    {alert.adminNote || "—"}
-                  </AdminText>
-                )}
-              </AdminTableCell>
-            </AdminTableRow>
-          ))
-        )}
-      </AdminTable>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="max-w-[200px]">
+                      <p className="text-xs text-black/30 truncate">{alert.address || "Unknown"}</p>
+                      <a
+                        href={`https://www.google.com/maps?q=${alert.lat},${alert.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] text-primary font-bold hover:underline mt-0.5"
+                      >
+                        <MapPin size={10} weight="fill" /> View on Map <ArrowSquareOut size={10} weight="bold" />
+                      </a>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="flex items-center gap-1.5">
+                      <Phone size={12} weight="fill" className="text-black/15" />
+                      <div>
+                        <p className="text-xs font-bold">{alert.contactName || "—"}</p>
+                        <p className="text-[10px] text-black/20">{alert.contactPhone || "—"}</p>
+                      </div>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="flex items-center gap-1.5">
+                      {alert.batteryLevel <= 20 ? (
+                        <BatteryLow size={16} weight="fill" className="text-error" />
+                      ) : (
+                        <BatteryFull size={16} weight="fill" className="text-success" />
+                      )}
+                      <span className="text-xs font-bold">{alert.batteryLevel}%</span>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <AdminBadge variant={statusColor(alert.status) as any}>
+                      {alert.status}
+                    </AdminBadge>
+                    {alert.resolvedByName && (
+                      <p className="text-[10px] text-black/20 mt-0.5">by {alert.resolvedByName}</p>
+                    )}
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div>
+                      <p className="text-xs font-bold">{formatDistanceToNow(new Date(alert.createdAt), { addSuffix: true })}</p>
+                      <p className="text-[10px] text-black/20">{format(new Date(alert.createdAt), "dd MMM yyyy, HH:mm")}</p>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    {alert.status === "SENT" ? (
+                      noteModalId === alert.id ? (
+                        <div className="flex flex-col gap-2 min-w-[180px]">
+                          <input
+                            type="text"
+                            placeholder="Admin note (optional)"
+                            value={noteInput}
+                            onChange={(e) => setNoteInput(e.target.value)}
+                            className="text-xs border border-black/5 rounded-lg px-3 py-1.5 bg-black/[0.02] focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleResolve(alert.id)}
+                              disabled={resolvingId === alert.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+                            >
+                              {resolvingId === alert.id ? (
+                                <SpinnerGap size={12} weight="bold" className="animate-spin" />
+                              ) : (
+                                <CheckCircle size={12} weight="bold" />
+                              )}
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => { setNoteModalId(null); setNoteInput(""); }}
+                              className="px-3 py-1.5 text-xs font-bold text-black/30 hover:bg-black/[0.02] rounded-lg transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setNoteModalId(alert.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:opacity-90 transition-opacity"
+                        >
+                          <CheckCircle size={12} weight="bold" />
+                          Resolve
+                        </button>
+                      )
+                    ) : (
+                      <p className="text-xs text-black/20">{alert.adminNote || "—"}</p>
+                    )}
+                  </AdminTableCell>
+                </AdminTableRow>
+              ))
+            )}
+          </AdminTable>
+        </div>
 
-      {total > itemsPerPage && (
-        <AdminPagination
-          currentPage={currentPage}
-          totalItems={total}
-          itemsPerPage={itemsPerPage}
-          onPageChange={(page) => { setCurrentPage(page); fetchAlerts(page); }}
-        />
-      )}
+        {total > itemsPerPage && (
+          <AdminPagination
+            currentPage={currentPage}
+            totalItems={total}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page) => { setCurrentPage(page); fetchAlerts(page); }}
+          />
+        )}
+      </div>
     </div>
   );
 }

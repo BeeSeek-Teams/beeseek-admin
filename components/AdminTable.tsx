@@ -2,40 +2,34 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { AdminText } from "./AdminText";
 
 interface AdminTableProps {
   headers: string[];
   children: React.ReactNode;
   className?: string;
-  headerColor?: "default" | "secondary" | "white";
 }
 
 export const AdminTable: React.FC<AdminTableProps> = ({ 
   headers, 
   children, 
   className,
-  headerColor = "secondary"
 }) => {
   return (
-    <div className={cn("w-full overflow-hidden rounded-[24px] border border-border/50 bg-background shadow-sm", className)}>
+    <div className={cn("w-full bg-white rounded-xl border border-black/5 overflow-hidden", className)}>
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className={cn(
-              "border-b border-border/50",
-              headerColor === "white" ? "bg-white/5" : "bg-surface"
-            )}>
+            <tr className="border-b border-black/5">
               {headers.map((header, i) => (
-                <th key={i} className="px-6 py-4">
-                  <AdminText variant="bold" size="xs" color={headerColor} className="uppercase tracking-widest">
+                <th key={i} className="px-5 py-3">
+                  <span className="text-[10px] font-bold text-black/25 uppercase tracking-wider">
                     {header}
-                  </AdminText>
+                  </span>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/30">
+          <tbody>
             {children}
           </tbody>
         </table>
@@ -53,7 +47,7 @@ export const AdminTableRow: React.FC<{ children: React.ReactNode; onClick?: () =
     <tr 
       onClick={onClick}
       className={cn(
-        "hover:bg-surface/50 transition-colors",
+        "border-b border-black/[0.03] last:border-0 hover:bg-black/[0.01] transition-colors",
         onClick && "cursor-pointer",
         className
       )}
@@ -69,7 +63,7 @@ export const AdminTableCell: React.FC<{ children: React.ReactNode; className?: s
   colSpan
 }) => {
   return (
-    <td colSpan={colSpan} className={cn("px-6 py-4 items-center", className)}>
+    <td colSpan={colSpan} className={cn("px-5 py-3.5", className)}>
       {children}
     </td>
   );

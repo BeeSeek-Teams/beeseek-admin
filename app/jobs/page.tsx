@@ -2,22 +2,19 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { 
-  Search, 
-  RefreshCcw, 
-  Filter, 
-  ExternalLink, 
+  MagnifyingGlass, 
+  ArrowClockwise, 
+  Funnel, 
+  Copy, 
   Clock, 
-  MapPin, 
   Briefcase,
-  AlertCircle,
-  CheckCircle2,
+  WarningCircle,
+  CheckCircle,
   XCircle,
   Eye,
-  MoreHorizontal
-} from "lucide-react";
+  SpinnerGap,
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminInput } from "@/components/AdminInput";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
@@ -29,7 +26,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getJobs, updateJobStatus, adminCancelJob, Job, JobStatus, JobStep } from "@/lib/jobs";
 import { AdminConsentModal } from "@/components/AdminConsentModal";
-import { cn } from "@/lib/utils";
 
 export default function JobsPage() {
   const router = useRouter();
@@ -39,6 +35,7 @@ export default function JobsPage() {
   const [cancelModal, setCancelModal] = useState<{ jobId: string; details: string } | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelAsInfraction, setCancelAsInfraction] = useState(false);
+  const [escalateModal, setEscalateModal] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<JobStatus | "">("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,8 +59,8 @@ export default function JobsPage() {
       const data = await getJobs(params);
       setJobs(data.items);
       setTotal(data.meta.total);
-    } catch (error) {
-      toast.error("Failed to fetch jobs");
+    } catch {
+      toast.error("Couldn't load jobs");
     } finally {
       setLoading(false);
     }
@@ -90,15 +87,14 @@ export default function JobsPage() {
   };
 
   const handleEscalate = async (jobId: string) => {
-    if (!window.confirm("Are you sure you want to ESCALATE this job? This will notify both parties and freeze certain actions.")) return;
-
     try {
       setProcessingId(jobId);
       await updateJobStatus(jobId, JobStatus.ESCALATED);
-      toast.success("Job escalated successfully");
+      toast.success("Job escalated");
+      setEscalateModal(null);
       fetchJobs();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to escalate job");
+      toast.error(error.response?.data?.message || "Couldn't escalate job");
     } finally {
       setProcessingId(null);
     }
@@ -106,36 +102,36 @@ export default function JobsPage() {
 
   const handleForceCancel = async () => {
     if (!cancelModal || !cancelReason.trim()) {
-      toast.error("Please provide a reason for cancellation");
+      toast.error("Please provide a reason");
       return;
     }
     try {
       setProcessingId(cancelModal.jobId);
       await adminCancelJob(cancelModal.jobId, cancelReason.trim(), cancelAsInfraction);
-      toast.success(`Job force-cancelled${cancelAsInfraction ? " (infraction recorded)" : ""}`);
+      toast.success(`Job cancelled${cancelAsInfraction ? " — infraction recorded" : ""}`);
       setCancelModal(null);
       setCancelReason("");
       setCancelAsInfraction(false);
       fetchJobs();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to force-cancel job");
+      toast.error(error.response?.data?.message || "Couldn't cancel job");
     } finally {
       setProcessingId(null);
     }
   };
 
   const getStatusBadge = (status: JobStatus) => {
-    const config = {
-      [JobStatus.ACTIVE]: { color: "text-primary", icon: <RefreshCcw size={12} className="animate-spin-slow" /> },
-      [JobStatus.COMPLETED]: { color: "text-success", icon: <CheckCircle2 size={12} /> },
-      [JobStatus.CANCELLED]: { color: "text-error", icon: <XCircle size={12} /> },
-      [JobStatus.ESCALATED]: { color: "text-amber-600", icon: <AlertCircle size={12} /> },
+    const config: Record<string, { color: string; icon: React.ReactNode }> = {
+      [JobStatus.ACTIVE]: { color: "text-blue-600", icon: <SpinnerGap size={12} weight="bold" className="animate-spin" /> },
+      [JobStatus.COMPLETED]: { color: "text-green-600", icon: <CheckCircle size={12} weight="fill" /> },
+      [JobStatus.CANCELLED]: { color: "text-red-600", icon: <XCircle size={12} weight="fill" /> },
+      [JobStatus.ESCALATED]: { color: "text-amber-600", icon: <WarningCircle size={12} weight="fill" /> },
     };
 
-    const style = config[status] || { color: "text-slate-500", icon: null };
+    const style = config[status] || { color: "text-black/30", icon: null };
 
     return (
-      <div className={cn("flex items-center gap-2 font-bold text-[10px] uppercase tracking-wider", style.color)}>
+      <div className={`flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-wider ${style.color}`}>
         {style.icon}
         {status}
       </div>
@@ -150,69 +146,83 @@ export default function JobsPage() {
     }).format(amount / 100);
   };
 
+  const getStepProgress = (step: string) => {
+    const steps: Record<string, number> = {
+      [JobStep.HOME_SAFE]: 100,
+      [JobStep.FINISHED]: 85,
+      [JobStep.STARTED]: 71,
+      [JobStep.ARRIVED]: 57,
+      [JobStep.ON_THE_WAY]: 42,
+      [JobStep.MATERIALS_PURCHASED]: 28,
+    };
+    return steps[step] || 14;
+  };
+
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-6 md:space-y-8">
       <AdminHeader
-        title="Job Control Center"
-        description="Monitor active service executions, verify forensics, and manage escalations."
+        title="Jobs"
+        description="Track and manage all active and completed service jobs."
         action={
-          <AdminButton variant="outline" size="sm" className="gap-2" onClick={() => fetchJobs()}>
-            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-            Resync Jobs
-          </AdminButton>
+          <button
+            onClick={() => fetchJobs()}
+            className="flex items-center gap-2 bg-white border border-black/5 px-4 py-2.5 rounded-xl font-bold text-xs text-black/40 hover:bg-black/[0.02] transition-colors"
+          >
+            <ArrowClockwise size={14} weight="bold" className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
         }
       />
 
       {/* Filter Bar */}
-      <div className="bg-white border border-border/50 rounded-[32px] p-4 flex flex-wrap items-center gap-4 shadow-sm">
-        <div className="relative flex-1 min-w-[300px]">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-900" size={18} />
+      <div className="bg-white border border-black/5 rounded-xl p-3 flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[240px]">
+          <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/25" size={16} weight="bold" />
           <AdminInput
-            placeholder="Search by contract details, agent or client name..."
-            className="pl-12 h-12 bg-slate-50 border-none rounded-2xl"
+            placeholder="Search by job details, agent or client name..."
+            className="pl-10 h-10 bg-black/[0.02] border-none rounded-xl text-xs"
             value={search}
             onChange={handleSearchChange}
           />
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100">
-            <Filter size={14} className="text-black" />
-            <select 
-              className="bg-transparent text-xs font-bold outline-none cursor-pointer"
-              value={statusFilter}
-              onChange={(e) => {
-                const val = e.target.value as JobStatus | "";
-                setStatusFilter(val);
-                setCurrentPage(1);
-                fetchJobs(search, val, 1);
-              }}
-            >
-              <option value="">All Statuses</option>
-              {Object.values(JobStatus).map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
+        <div className="flex items-center gap-2 px-3.5 py-2 bg-black/[0.02] rounded-xl">
+          <Funnel size={14} weight="bold" className="text-black/25" />
+          <select 
+            className="bg-transparent text-xs font-bold text-black/40 outline-none cursor-pointer"
+            value={statusFilter}
+            onChange={(e) => {
+              const val = e.target.value as JobStatus | "";
+              setStatusFilter(val);
+              setCurrentPage(1);
+              fetchJobs(search, val, 1);
+            }}
+          >
+            <option value="">All Statuses</option>
+            {Object.values(JobStatus).map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Jobs Table */}
-      <div className="bg-white border border-border/50 rounded-[32px] overflow-hidden shadow-sm overflow-x-auto min-w-full">
-        <div className="min-w-[1400px]">
-          <AdminTable headers={["Job / Contract", "Client / Agent", "Progress", "Total Value", "Status", "Last Update", "Actions"]}>
+      <div className="overflow-x-auto">
+        <div className="min-w-[1200px]">
+          <AdminTable headers={["Job Details", "People", "Progress", "Value", "Status", "Updated", "Actions"]}>
             {loading ? (
               Array(5).fill(0).map((_, i) => (
                 <AdminTableRow key={i}>
-                  <AdminTableCell colSpan={7}><div className="h-16 bg-slate-50 animate-pulse rounded-xl" /></AdminTableCell>
+                  <AdminTableCell colSpan={7}><div className="h-12 bg-black/[0.02] animate-pulse rounded-lg" /></AdminTableCell>
                 </AdminTableRow>
               ))
             ) : jobs.length === 0 ? (
               <AdminTableRow>
-                <AdminTableCell colSpan={7} className="text-center py-20">
-                  <div className="flex flex-col items-center gap-2 opacity-50">
-                    <Briefcase size={48} />
-                    <AdminText variant="bold" color="secondary">No jobs matching filters</AdminText>
+                <AdminTableCell colSpan={7} className="text-center py-16">
+                  <div className="flex flex-col items-center gap-2">
+                    <Briefcase size={40} weight="duotone" className="text-black/10" />
+                    <p className="text-sm font-bold text-black/30">No jobs found</p>
+                    <p className="text-xs text-black/20">Try adjusting your search or filters</p>
                   </div>
                 </AdminTableCell>
               </AdminTableRow>
@@ -228,86 +238,71 @@ export default function JobsPage() {
 
                 return (
                   <AdminTableRow key={job.id} onClick={() => router.push(`/jobs/${job.id}`)}>
-                    <AdminTableCell className="min-w-[300px] py-6">
-                      <div className="flex flex-col gap-1">
-                        <AdminText size="sm" variant="bold" className="line-clamp-1">{job.contract.details}</AdminText>
-                        <div className="flex items-center gap-2">
-                          <AdminText size="xs" color="secondary" className="text-[10px] font-mono">ID: {job.id.slice(0, 13)}...</AdminText>
-                          <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(job.id); toast.success("ID Copied"); }} className="text-primary hover:text-primary/70">
-                            <ExternalLink size={10} />
+                    <AdminTableCell className="min-w-[260px]">
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-primary line-clamp-1">{job.contract.details}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[10px] font-mono text-black/25">{job.id.slice(0, 13)}…</p>
+                          <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(job.id); toast.success("Copied"); }} className="text-black/20 hover:text-primary transition-colors">
+                            <Copy size={10} weight="bold" />
                           </button>
                         </div>
                       </div>
                     </AdminTableCell>
-                    <AdminTableCell className="min-w-[250px]">
-                      <div className="flex flex-col gap-2">
-                         <div className="flex items-center gap-2">
-                            <AdminBadge variant="secondary" className="text-[8px] px-1">CLIENT</AdminBadge>
-                            <AdminText size="xs" variant="bold">{job.contract.client.firstName} {job.contract.client.lastName}</AdminText>
-                         </div>
-                         <div className="flex items-center gap-2">
-                            <AdminBadge variant="primary" className="text-[8px] px-1">AGENT</AdminBadge>
-                            <AdminText size="xs" variant="bold">{job.contract.agent.firstName} {job.contract.agent.lastName}</AdminText>
-                         </div>
+                    <AdminTableCell className="min-w-[200px]">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <AdminBadge variant="secondary" className="text-[8px] px-1.5">CLIENT</AdminBadge>
+                          <p className="text-xs font-bold text-black/60">{job.contract.client.firstName} {job.contract.client.lastName}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <AdminBadge variant="primary" className="text-[8px] px-1.5">AGENT</AdminBadge>
+                          <p className="text-xs font-bold text-black/60">{job.contract.agent.firstName} {job.contract.agent.lastName}</p>
+                        </div>
                       </div>
                     </AdminTableCell>
                     <AdminTableCell>
-                      <div className="flex flex-col gap-1">
-                         <AdminText size="xs" variant="bold" className="uppercase tracking-tighter text-slate-500">{job.currentStep.replace(/_/g, ' ')}</AdminText>
-                         <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary transition-all duration-500" 
-                              style={{ 
-                                width: `${
-                                  job.currentStep === JobStep.HOME_SAFE ? 100 :
-                                  job.currentStep === JobStep.FINISHED ? 85 :
-                                  job.currentStep === JobStep.STARTED ? 71 :
-                                  job.currentStep === JobStep.ARRIVED ? 57 :
-                                  job.currentStep === JobStep.ON_THE_WAY ? 42 :
-                                  job.currentStep === JobStep.MATERIALS_PURCHASED ? 28 : 14
-                                }%` 
-                              }} 
-                            />
-                         </div>
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-bold text-black/25 uppercase">{job.currentStep.replace(/_/g, ' ')}</p>
+                        <div className="w-20 h-1 bg-black/[0.04] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full transition-all duration-500" 
+                            style={{ width: `${getStepProgress(job.currentStep)}%` }} 
+                          />
+                        </div>
                       </div>
+                    </AdminTableCell>
+                    <AdminTableCell className="min-w-[100px]">
+                      <p className="text-sm font-black text-primary">{formatCurrency(displayTotal)}</p>
+                    </AdminTableCell>
+                    <AdminTableCell className="min-w-[130px]">
+                      {getStatusBadge(job.status)}
                     </AdminTableCell>
                     <AdminTableCell className="min-w-[120px]">
-                      <AdminText size="md" variant="bold" className="text-slate-900">{formatCurrency(displayTotal)}</AdminText>
-                    </AdminTableCell>
-                  <AdminTableCell className="min-w-[160px]">
-                    {getStatusBadge(job.status)}
-                  </AdminTableCell>
-                  <AdminTableCell className="min-w-[140px]">
-                    <div className="flex flex-col">
-                      <AdminText size="xs" variant="bold">{format(new Date(job.updatedAt), "MMM dd, yyyy")}</AdminText>
-                      <div className="flex items-center gap-1 opacity-50">
-                        <Clock size={10} />
-                        <AdminText size="xs" className="text-[10px]">{format(new Date(job.updatedAt), "HH:mm:ss")}</AdminText>
+                      <div>
+                        <p className="text-xs font-bold text-black/40">{format(new Date(job.updatedAt), "MMM dd, yyyy")}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Clock size={10} weight="bold" className="text-black/15" />
+                          <p className="text-[10px] text-black/20">{format(new Date(job.updatedAt), "HH:mm")}</p>
+                        </div>
                       </div>
-                    </div>
-                  </AdminTableCell>
-                  <AdminTableCell>
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    </AdminTableCell>
+                    <AdminTableCell>
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <Link href={`/jobs/${job.id}`}>
-                          <button 
-                            className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-primary transition-colors flex items-center gap-1"
-                            title="View Details"
-                          >
-                            <Eye size={16} />
+                          <button className="p-2 hover:bg-black/[0.03] rounded-lg text-black/25 hover:text-primary transition-colors" title="View">
+                            <Eye size={16} weight="bold" />
                           </button>
                         </Link>
                         
                         {job.status !== JobStatus.ESCALATED && job.status !== JobStatus.COMPLETED && job.status !== JobStatus.CANCELLED && (
                           <button 
-                            onClick={() => handleEscalate(job.id)}
+                            onClick={() => setEscalateModal(job.id)}
                             disabled={processingId === job.id}
-                            className={cn(
-                              "p-2 hover:bg-amber-50 rounded-lg text-slate-400 hover:text-amber-600 transition-colors flex items-center gap-1",
-                              processingId === job.id && "animate-pulse cursor-not-allowed"
-                            )}
-                            title="Escalate Job"
+                            className="p-2 hover:bg-amber-50 rounded-lg text-black/25 hover:text-amber-600 transition-colors disabled:opacity-50"
+                            title="Escalate"
                           >
-                            <AlertCircle size={16} />
+                            <WarningCircle size={16} weight="bold" />
                           </button>
                         )}
 
@@ -319,64 +314,66 @@ export default function JobsPage() {
                               setCancelModal({ jobId: job.id, details: job.contract.details });
                             }}
                             disabled={processingId === job.id}
-                            className={cn(
-                              "p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1",
-                              processingId === job.id && "animate-pulse cursor-not-allowed"
-                            )}
-                            title="Force Cancel (with refund)"
+                            className="p-2 hover:bg-red-50 rounded-lg text-black/25 hover:text-red-600 transition-colors disabled:opacity-50"
+                            title="Force Cancel"
                           >
-                            <XCircle size={16} />
+                            <XCircle size={16} weight="bold" />
                           </button>
                         )}
-
-                        <button className="p-2 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-primary transition-colors">
-                          <MoreHorizontal size={16} />
-                        </button>
-                    </div>
-                  </AdminTableCell>
-                </AdminTableRow>
-              );
-            })
-          )}
-        </AdminTable>
+                      </div>
+                    </AdminTableCell>
+                  </AdminTableRow>
+                );
+              })
+            )}
+          </AdminTable>
         </div>
       </div>
 
-      <div className="bg-white border border-border/50 rounded-[32px] p-6 shadow-sm">
-        <AdminPagination
-          currentPage={currentPage}
-          totalItems={total}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-        />
-      </div>
+      <AdminPagination
+        currentPage={currentPage}
+        totalItems={total}
+        itemsPerPage={itemsPerPage}
+        onPageChange={setCurrentPage}
+      />
+
+      {/* Escalate Consent Modal */}
+      <AdminConsentModal
+        isOpen={!!escalateModal}
+        onClose={() => setEscalateModal(null)}
+        onConfirm={() => escalateModal && handleEscalate(escalateModal)}
+        title="Escalate this job?"
+        description="Both the client and agent will be notified. Some actions will be frozen until resolved."
+        confirmLabel="Escalate"
+        loading={!!processingId}
+      />
 
       {/* Force Cancel Modal */}
       {cancelModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCancelModal(null)} />
-          <div className="relative bg-white rounded-[32px] p-8 max-w-md w-full mx-4 shadow-2xl">
-            <AdminText variant="bold" size="lg" className="mb-2">Force Cancel Job</AdminText>
-            <AdminText size="sm" color="secondary" className="mb-6">
-              This will cancel the job and trigger a full financial reversal. Funds will be returned to the client.
-            </AdminText>
+          <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl space-y-4">
+            <div>
+              <p className="text-sm font-black text-primary">Cancel this job?</p>
+              <p className="text-xs text-black/40 mt-1">This will reverse all payments and return funds to the client.</p>
+            </div>
             
-            <div className="mb-4">
-              <AdminText size="xs" variant="bold" className="mb-2 uppercase tracking-wide text-slate-500">Job Details</AdminText>
-              <AdminText size="sm" className="italic text-slate-600 line-clamp-2">&ldquo;{cancelModal.details}&rdquo;</AdminText>
+            <div className="bg-black/[0.02] p-3 rounded-xl">
+              <p className="text-[10px] font-bold text-black/25 mb-1">JOB DETAILS</p>
+              <p className="text-xs text-black/40 line-clamp-2 italic">&ldquo;{cancelModal.details}&rdquo;</p>
             </div>
 
-            <div className="mb-4">
-              <AdminText size="xs" variant="bold" className="mb-2 uppercase tracking-wide text-slate-500">Cancellation Reason *</AdminText>
+            <div>
+              <p className="text-[10px] font-bold text-black/25 mb-2">REASON *</p>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Describe why this job is being force-cancelled..."
-                className="w-full border border-slate-200 rounded-2xl p-4 text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                placeholder="Why is this job being cancelled?"
+                className="w-full border border-black/5 rounded-xl p-3 text-xs resize-none h-20 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/20"
               />
             </div>
 
-            <label className="flex items-center gap-3 mb-6 p-4 bg-red-50 rounded-2xl border border-red-100 cursor-pointer">
+            <label className="flex items-center gap-3 p-3 bg-red-50 rounded-xl cursor-pointer">
               <input 
                 type="checkbox" 
                 checked={cancelAsInfraction} 
@@ -384,23 +381,25 @@ export default function JobsPage() {
                 className="w-4 h-4 accent-red-600"
               />
               <div>
-                <AdminText size="sm" variant="bold" color="error">Mark as Agent Infraction</AdminText>
-                <AdminText size="xs" color="secondary">Service fee refunded to client. Recorded as a strike on agent&rsquo;s record.</AdminText>
+                <p className="text-xs font-bold text-red-600">Count as agent infraction</p>
+                <p className="text-[10px] text-black/30">Service fee returned to client. Counts as a strike.</p>
               </div>
             </label>
 
-            <div className="flex gap-3">
-              <AdminButton variant="outline" className="flex-1" onClick={() => setCancelModal(null)}>
-                Discard
-              </AdminButton>
-              <AdminButton 
-                variant="primary" 
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+            <div className="flex gap-2 pt-1">
+              <button 
+                className="flex-1 px-4 py-2.5 bg-black/[0.03] rounded-xl text-xs font-bold text-black/40 hover:bg-black/[0.06] transition-colors"
+                onClick={() => setCancelModal(null)}
+              >
+                Go Back
+              </button>
+              <button 
+                className="flex-1 px-4 py-2.5 bg-red-600 rounded-xl text-xs font-bold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
                 onClick={handleForceCancel}
                 disabled={!cancelReason.trim() || processingId === cancelModal.jobId}
               >
-                {processingId === cancelModal.jobId ? "Processing..." : "Force Cancel"}
-              </AdminButton>
+                {processingId === cancelModal.jobId ? "Cancelling..." : "Cancel Job"}
+              </button>
             </div>
           </div>
         </div>

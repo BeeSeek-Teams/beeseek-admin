@@ -2,30 +2,22 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Search,
-  RefreshCcw,
+  MagnifyingGlass,
+  ArrowClockwise,
   Briefcase,
   Star,
   Eye,
-  TrendingUp,
+  TrendUp,
   MapPin,
   ToggleLeft,
   ToggleRight,
-  Trash2,
-  MoreHorizontal,
-  DollarSign,
-  BarChart3,
-  Filter,
-  ChevronDown,
-  ExternalLink,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Image as ImageIcon,
-} from "lucide-react";
+  Trash,
+  CurrencyDollar,
+  ChartBar,
+  CheckCircle,
+  SpinnerGap,
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminInput } from "@/components/AdminInput";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
@@ -48,7 +40,6 @@ export default function BeesPage() {
   const itemsPerPage = 15;
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Bee | null>(null);
-  const [expandedBee, setExpandedBee] = useState<string | null>(null);
 
   const fetchBees = useCallback(async (
     searchQuery = search,
@@ -69,8 +60,8 @@ export default function BeesPage() {
       const data = await getBees(params);
       setBees(data.items);
       setTotal(data.total);
-    } catch (error) {
-      toast.error("Failed to fetch bees");
+    } catch {
+      toast.error("Couldn't load listings");
     } finally {
       setLoading(false);
     }
@@ -80,8 +71,8 @@ export default function BeesPage() {
     try {
       const data = await getBeeStats();
       setStats(data);
-    } catch (error) {
-      // Stats are non-critical, silent fail
+    } catch {
+      // Stats are non-critical
     }
   };
 
@@ -129,10 +120,10 @@ export default function BeesPage() {
       setProcessingId(bee.id);
       const updated = await toggleBeeActive(bee.id);
       setBees(prev => prev.map(b => b.id === bee.id ? { ...b, isActive: updated.isActive } : b));
-      toast.success(`Bee "${bee.title}" is now ${updated.isActive ? 'active' : 'deactivated'}`);
+      toast.success(`"${bee.title}" is now ${updated.isActive ? 'active' : 'inactive'}`);
       fetchStats();
-    } catch (error) {
-      toast.error("Failed to toggle bee status");
+    } catch {
+      toast.error("Couldn't update status");
     } finally {
       setProcessingId(null);
     }
@@ -145,11 +136,11 @@ export default function BeesPage() {
       await deleteBee(deleteTarget.id);
       setBees(prev => prev.filter(b => b.id !== deleteTarget.id));
       setTotal(prev => prev - 1);
-      toast.success(`Bee "${deleteTarget.title}" has been permanently removed.`);
+      toast.success(`"${deleteTarget.title}" deleted`);
       setDeleteTarget(null);
       fetchStats();
-    } catch (error) {
-      toast.error("Failed to delete bee");
+    } catch {
+      toast.error("Couldn't delete listing");
     } finally {
       setProcessingId(null);
     }
@@ -163,107 +154,78 @@ export default function BeesPage() {
   const topCategories = stats?.categories?.slice(0, 6) || [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <AdminConsentModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Remove Bee Listing"
-        description={`This will permanently delete "${deleteTarget?.title}" by ${deleteTarget?.agent?.firstName} ${deleteTarget?.agent?.lastName}. This action cannot be undone.`}
-        confirmLabel="Delete Permanently"
+        title="Delete this listing?"
+        description={`"${deleteTarget?.title}" by ${deleteTarget?.agent?.firstName} ${deleteTarget?.agent?.lastName} will be permanently removed.`}
+        confirmLabel="Delete"
         variant="danger"
+        loading={!!processingId}
       />
 
       <AdminHeader
-        title="Bee Registry"
-        description={`Monitoring ${total} service listings across the platform.`}
+        title="Service Listings"
+        description={`${total} listings across the platform`}
         action={
-          <AdminButton variant="outline" size="sm" className="gap-2" onClick={() => { fetchBees(); fetchStats(); }} disabled={loading}>
-            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
+          <button
+            onClick={() => { fetchBees(); fetchStats(); }}
+            disabled={loading}
+            className="flex items-center gap-2 bg-white border border-black/5 px-4 py-2.5 rounded-xl font-bold text-xs text-black/40 hover:bg-black/[0.02] transition-colors disabled:opacity-50"
+          >
+            <ArrowClockwise size={14} weight="bold" className={loading ? "animate-spin" : ""} />
             Refresh
-          </AdminButton>
+          </button>
         }
       />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-border/50 rounded-[24px] p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Briefcase size={22} className="text-primary" />
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {[
+          { label: "Total Listings", value: stats?.totalBees, icon: Briefcase, color: "bg-primary/10 text-primary" },
+          { label: "Active", value: stats?.activeBees, icon: CheckCircle, color: "bg-green-50 text-green-600" },
+          { label: "Revenue", value: stats ? formatCurrency(stats.totalRevenue) : null, icon: CurrencyDollar, color: "bg-amber-50 text-amber-600", isCurrency: true },
+          { label: "Avg Rating", value: stats?.avgRating, icon: Star, color: "bg-blue-50 text-blue-600" },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={i} className="bg-white p-4 md:p-5 rounded-2xl border border-black/5 space-y-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}>
+                <Icon size={20} weight="duotone" />
+              </div>
+              <div>
+                {stat.value != null ? (
+                  <p className="text-2xl font-black text-primary">
+                    {stat.isCurrency ? stat.value : Number(stat.value).toLocaleString()}
+                  </p>
+                ) : (
+                  <div className="h-8 w-16 bg-black/[0.03] rounded-lg animate-pulse" />
+                )}
+                <p className="text-[10px] font-bold text-black/25 mt-1">{stat.label}</p>
+              </div>
             </div>
-            <AdminBadge variant="primary">Total</AdminBadge>
-          </div>
-          {stats ? (
-            <AdminText variant="bold" size="3xl">{stats.totalBees.toLocaleString()}</AdminText>
-          ) : (
-            <div className="h-9 w-20 bg-surface rounded-lg animate-pulse" />
-          )}
-          <AdminText size="xs" color="secondary" className="mt-1">Registered Bees</AdminText>
-        </div>
-
-        <div className="bg-white border border-border/50 rounded-[24px] p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center">
-              <CheckCircle2 size={22} className="text-success" />
-            </div>
-            <AdminBadge variant="success">Live</AdminBadge>
-          </div>
-          {stats ? (
-            <AdminText variant="bold" size="3xl">{stats.activeBees.toLocaleString()}</AdminText>
-          ) : (
-            <div className="h-9 w-20 bg-surface rounded-lg animate-pulse" />
-          )}
-          <AdminText size="xs" color="secondary" className="mt-1">Active Listings</AdminText>
-        </div>
-
-        <div className="bg-white border border-border/50 rounded-[24px] p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-warning/10 flex items-center justify-center">
-              <DollarSign size={22} className="text-warning" />
-            </div>
-            <AdminBadge variant="warning">Revenue</AdminBadge>
-          </div>
-          {stats ? (
-            <AdminText variant="bold" size="3xl">{formatCurrency(stats.totalRevenue)}</AdminText>
-          ) : (
-            <div className="h-9 w-20 bg-surface rounded-lg animate-pulse" />
-          )}
-          <AdminText size="xs" color="secondary" className="mt-1">Total Platform Revenue</AdminText>
-        </div>
-
-        <div className="bg-white border border-border/50 rounded-[24px] p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-info/10 flex items-center justify-center">
-              <Star size={22} className="text-info" />
-            </div>
-            <AdminBadge variant="info">Quality</AdminBadge>
-          </div>
-          {stats ? (
-            <AdminText variant="bold" size="3xl">{stats.avgRating}</AdminText>
-          ) : (
-            <div className="h-9 w-20 bg-surface rounded-lg animate-pulse" />
-          )}
-          <AdminText size="xs" color="secondary" className="mt-1">Average Rating</AdminText>
-        </div>
+          );
+        })}
       </div>
 
-      {/* Category Breakdown */}
+      {/* Category Chips */}
       {topCategories.length > 0 && (
-        <div className="bg-white border border-border/50 rounded-[24px] p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <AdminText variant="bold" size="sm">Category Distribution</AdminText>
-            <BarChart3 size={16} className="text-secondary" />
+        <div className="bg-white border border-black/5 rounded-2xl p-4 md:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-black text-black/30">Categories</p>
+            <ChartBar size={14} weight="bold" className="text-black/15" />
           </div>
           <div className="flex flex-wrap gap-2">
             {topCategories.map((cat) => (
               <button
                 key={cat.category}
                 onClick={() => handleCategoryFilter(categoryFilter === cat.category ? "" : cat.category)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold font-plus-jakarta transition-all border ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                   categoryFilter === cat.category
-                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                    : "bg-surface text-secondary border-border/50 hover:bg-white hover:border-primary/30"
+                    ? "bg-primary text-white"
+                    : "bg-black/[0.03] text-black/30 hover:bg-black/[0.06]"
                 }`}
               >
                 {cat.category} ({cat.count})
@@ -274,201 +236,189 @@ export default function BeesPage() {
       )}
 
       {/* Filters Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white border border-border/50 p-6 rounded-[24px] shadow-sm">
-        <div className="w-full md:max-w-md">
-          <AdminInput
-            placeholder="Search by title, category, or agent name..."
-            value={search}
-            onChange={handleSearchChange}
-            icon={<Search size={18} />}
-          />
-        </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <AdminButton
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => { fetchBees(); fetchStats(); }}
-            disabled={loading}
-          >
-            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </AdminButton>
-          <div className="flex border border-border/50 rounded-xl overflow-hidden bg-surface">
-            <button
-              onClick={() => handleActiveFilter("")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors ${activeFilter === '' ? 'bg-primary text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => handleActiveFilter("true")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${activeFilter === 'true' ? 'bg-success text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              Active
-            </button>
-            <button
-              onClick={() => handleActiveFilter("false")}
-              className={`px-4 py-2 text-xs font-bold font-plus-jakarta transition-colors border-l border-border/50 ${activeFilter === 'false' ? 'bg-error text-white' : 'text-secondary hover:bg-white'}`}
-            >
-              Inactive
-            </button>
+      <div className="bg-white border border-black/5 rounded-xl p-3 flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[200px]">
+          <div className="relative">
+            <MagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/25" size={16} weight="bold" />
+            <AdminInput
+              placeholder="Search by title, category, or agent..."
+              value={search}
+              onChange={handleSearchChange}
+              className="pl-10 h-10 bg-black/[0.02] border-none rounded-xl text-xs"
+            />
           </div>
+        </div>
+        <div className="flex border border-black/5 rounded-xl overflow-hidden">
+          {[
+            { label: "All", value: "" },
+            { label: "Active", value: "true" },
+            { label: "Inactive", value: "false" },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleActiveFilter(opt.value)}
+              className={`px-3.5 py-2 text-[10px] font-bold transition-colors ${
+                activeFilter === opt.value
+                  ? "bg-primary text-white"
+                  : "text-black/30 hover:bg-black/[0.02]"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-[24px] border border-border/50 overflow-hidden shadow-sm overflow-x-auto min-w-full">
-        <div className="min-w-[1200px]">
-          <AdminTable headers={["Service Listing", "Agent", "Metrics", "Pricing", "Status", "Controls"]}>
-          {loading ? (
-            <AdminTableRow>
-              <AdminTableCell colSpan={6}>
-                <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <RefreshCcw size={32} className="animate-spin text-primary/40" />
-                  <AdminText color="secondary" size="sm">Loading Bee Registry...</AdminText>
-                </div>
-              </AdminTableCell>
-            </AdminTableRow>
-          ) : bees.length === 0 ? (
-            <AdminTableRow>
-              <AdminTableCell colSpan={6}>
-                <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <div className="w-16 h-16 bg-surface rounded-full flex items-center justify-center text-secondary/20">
-                    <Briefcase size={32} />
-                  </div>
-                  <div className="text-center">
-                    <AdminText variant="bold">No bees found</AdminText>
-                    <AdminText color="secondary" size="xs">Try adjusting your filters or search keywords.</AdminText>
-                  </div>
-                </div>
-              </AdminTableCell>
-            </AdminTableRow>
-          ) : (
-            bees.map((bee) => (
-              <AdminTableRow key={bee.id} className="group">
-                <AdminTableCell>
-                  <div className="flex items-center gap-3 max-w-[280px]">
-                    <div className="w-11 h-11 rounded-2xl bg-surface border border-border/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {bee.images && bee.images.length > 0 ? (
-                        <img src={bee.images[0]} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <Briefcase size={18} className="text-primary/40" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <AdminText variant="bold" size="sm" className="truncate block">{bee.title}</AdminText>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <AdminBadge variant="info" className="text-[9px] px-1.5 py-0">{bee.category}</AdminBadge>
-                        {bee.locationAddress && (
-                          <div className="flex items-center gap-0.5 text-muted">
-                            <MapPin size={10} />
-                            <AdminText size="xs" color="secondary" className="truncate max-w-[100px]">{bee.locationAddress}</AdminText>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                  {bee.agent ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-surface border border-border/20 flex items-center justify-center text-primary font-bold text-[10px] overflow-hidden flex-shrink-0">
-                        {bee.agent.profileImage ? (
-                          <img src={bee.agent.profileImage} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          `${bee.agent.firstName?.[0] || ''}${bee.agent.lastName?.[0] || ''}`
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <AdminText size="xs" variant="bold" className="truncate block">{bee.agent.firstName} {bee.agent.lastName}</AdminText>
-                        <AdminText size="xs" color="secondary" className="truncate block max-w-[120px]">{bee.agent.email}</AdminText>
-                      </div>
-                    </div>
-                  ) : (
-                    <AdminText size="xs" color="secondary">N/A</AdminText>
-                  )}
-                </AdminTableCell>
-                <AdminTableCell>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1" title="Views">
-                        <Eye size={12} className="text-muted" />
-                        <AdminText size="xs">{bee.totalViews}</AdminText>
-                      </div>
-                      <div className="flex items-center gap-1" title="Hires">
-                        <TrendingUp size={12} className="text-muted" />
-                        <AdminText size="xs">{bee.totalHires}</AdminText>
-                      </div>
-                      <div className="flex items-center gap-1" title="Rating">
-                        <Star size={12} className="text-warning" />
-                        <AdminText size="xs" variant="bold">{Number(bee.rating).toFixed(1)}</AdminText>
-                      </div>
-                    </div>
-                    <AdminText size="xs" color="secondary">{bee.jobsCompleted} jobs done</AdminText>
-                  </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                  <div>
-                    <AdminText variant="bold" size="sm">{formatCurrency(Number(bee.price))}</AdminText>
-                    {bee.offersInspection && (
-                      <AdminText size="xs" color="secondary">Inspection: {bee.inspectionPrice ? formatCurrency(Number(bee.inspectionPrice)) : 'Free'}</AdminText>
-                    )}
-                  </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                  <div className="space-y-1.5">
-                    <AdminBadge variant={bee.isActive ? 'success' : 'error'}>
-                      {bee.isActive ? 'Active' : 'Inactive'}
-                    </AdminBadge>
-                    <AdminText size="xs" color="secondary">
-                      {format(new Date(bee.createdAt), "MMM dd, yyyy")}
-                    </AdminText>
-                  </div>
-                </AdminTableCell>
-                <AdminTableCell>
-                  <div className="flex items-center gap-2">
-                    <AdminButton
-                      variant={bee.isActive ? "secondary" : "success"}
-                      size="sm"
-                      className="h-8 py-0 gap-1.5"
-                      onClick={() => handleToggleActive(bee)}
-                      disabled={processingId === bee.id}
-                      title={bee.isActive ? "Deactivate" : "Activate"}
-                    >
-                      {processingId === bee.id ? (
-                        <RefreshCcw size={14} className="animate-spin" />
-                      ) : bee.isActive ? (
-                        <ToggleRight size={14} />
-                      ) : (
-                        <ToggleLeft size={14} />
-                      )}
-                      {bee.isActive ? "Deactivate" : "Activate"}
-                    </AdminButton>
-                    <AdminButton
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-error hover:bg-error/5 hover:border-error/30"
-                      onClick={() => setDeleteTarget(bee)}
-                      disabled={processingId === bee.id}
-                      title="Delete Bee"
-                    >
-                      <Trash2 size={14} />
-                    </AdminButton>
+      <div className="overflow-x-auto">
+        <div className="min-w-[1100px]">
+          <AdminTable headers={["Listing", "Agent", "Metrics", "Pricing", "Status", "Actions"]}>
+            {loading ? (
+              <AdminTableRow>
+                <AdminTableCell colSpan={6}>
+                  <div className="flex flex-col items-center justify-center py-16 gap-2">
+                    <SpinnerGap size={24} weight="bold" className="animate-spin text-black/15" />
+                    <p className="text-xs font-bold text-black/20">Loading...</p>
                   </div>
                 </AdminTableCell>
               </AdminTableRow>
-            ))
-          )}
-        </AdminTable>
+            ) : bees.length === 0 ? (
+              <AdminTableRow>
+                <AdminTableCell colSpan={6}>
+                  <div className="flex flex-col items-center justify-center py-16 gap-2">
+                    <Briefcase size={40} weight="duotone" className="text-black/10" />
+                    <p className="text-sm font-bold text-black/30">No listings found</p>
+                    <p className="text-xs text-black/20">Try adjusting your search or filters</p>
+                  </div>
+                </AdminTableCell>
+              </AdminTableRow>
+            ) : (
+              bees.map((bee) => (
+                <AdminTableRow key={bee.id}>
+                  <AdminTableCell>
+                    <div className="flex items-center gap-3 max-w-[260px]">
+                      <div className="w-10 h-10 rounded-xl bg-black/[0.03] border border-black/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {bee.images && bee.images.length > 0 ? (
+                          <img src={bee.images[0]} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Briefcase size={16} weight="duotone" className="text-black/15" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-black/60 truncate">{bee.title}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <AdminBadge variant="info" className="text-[8px] px-1.5">{bee.category}</AdminBadge>
+                          {bee.locationAddress && (
+                            <div className="flex items-center gap-0.5 text-black/20">
+                              <MapPin size={9} weight="bold" />
+                              <span className="text-[9px] truncate max-w-[80px]">{bee.locationAddress}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    {bee.agent ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/5 flex items-center justify-center text-primary font-bold text-[9px] overflow-hidden flex-shrink-0">
+                          {bee.agent.profileImage ? (
+                            <img src={bee.agent.profileImage} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            `${bee.agent.firstName?.[0] || ''}${bee.agent.lastName?.[0] || ''}`
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-black/60 truncate">{bee.agent.firstName} {bee.agent.lastName}</p>
+                          <p className="text-[10px] text-black/20 truncate max-w-[110px]">{bee.agent.email}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-black/20">—</p>
+                    )}
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1" title="Views">
+                          <Eye size={11} weight="bold" className="text-black/15" />
+                          <span className="text-[10px] font-bold text-black/30">{bee.totalViews}</span>
+                        </div>
+                        <div className="flex items-center gap-1" title="Hires">
+                          <TrendUp size={11} weight="bold" className="text-black/15" />
+                          <span className="text-[10px] font-bold text-black/30">{bee.totalHires}</span>
+                        </div>
+                        <div className="flex items-center gap-1" title="Rating">
+                          <Star size={11} weight="fill" className="text-amber-400" />
+                          <span className="text-[10px] font-bold text-black/40">{Number(bee.rating).toFixed(1)}</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-black/20">{bee.jobsCompleted} jobs done</p>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div>
+                      <p className="text-xs font-black text-primary">{formatCurrency(Number(bee.price))}</p>
+                      {bee.offersInspection && (
+                        <p className="text-[10px] text-black/20 mt-0.5">
+                          Inspection: {bee.inspectionPrice ? formatCurrency(Number(bee.inspectionPrice)) : 'Free'}
+                        </p>
+                      )}
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="space-y-1">
+                      <AdminBadge variant={bee.isActive ? 'success' : 'error'}>
+                        {bee.isActive ? 'Active' : 'Inactive'}
+                      </AdminBadge>
+                      <p className="text-[10px] text-black/15">
+                        {format(new Date(bee.createdAt), "MMM dd, yyyy")}
+                      </p>
+                    </div>
+                  </AdminTableCell>
+                  <AdminTableCell>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleToggleActive(bee)}
+                        disabled={processingId === bee.id}
+                        className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                          bee.isActive 
+                            ? "text-black/25 hover:bg-amber-50 hover:text-amber-600" 
+                            : "text-black/25 hover:bg-green-50 hover:text-green-600"
+                        }`}
+                        title={bee.isActive ? "Deactivate" : "Activate"}
+                      >
+                        {processingId === bee.id ? (
+                          <SpinnerGap size={16} weight="bold" className="animate-spin" />
+                        ) : bee.isActive ? (
+                          <ToggleRight size={16} weight="fill" />
+                        ) : (
+                          <ToggleLeft size={16} weight="bold" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(bee)}
+                        disabled={processingId === bee.id}
+                        className="p-2 rounded-lg text-black/25 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                        title="Delete"
+                      >
+                        <Trash size={16} weight="bold" />
+                      </button>
+                    </div>
+                  </AdminTableCell>
+                </AdminTableRow>
+              ))
+            )}
+          </AdminTable>
         </div>
-        <AdminPagination
-          currentPage={currentPage}
-          totalItems={total}
-          itemsPerPage={itemsPerPage}
-          onPageChange={handlePageChange}
-        />
       </div>
+
+      <AdminPagination
+        currentPage={currentPage}
+        totalItems={total}
+        itemsPerPage={itemsPerPage}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }

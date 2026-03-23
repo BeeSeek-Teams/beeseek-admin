@@ -1,17 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Send, 
-  Users, 
-  User, 
-  AlertTriangle,
+import {
+  PaperPlaneTilt,
+  UsersThree,
+  User,
+  Warning,
   Megaphone,
-  RefreshCcw,
-} from "lucide-react";
+  SpinnerGap
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminInput } from "@/components/AdminInput";
 import { AdminTextArea } from "@/components/AdminTextArea";
 import { AdminConsentModal } from "@/components/AdminConsentModal";
@@ -22,7 +20,7 @@ import { cn } from "@/lib/utils";
 export default function NotificationsPage() {
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: "",
     message: "",
@@ -48,16 +46,9 @@ export default function NotificationsPage() {
       }
 
       await api.post('/admin/notifications/send', payload);
-      
-      toast.success("Notification sent successfully!");
-      
-      setFormData(prev => ({
-        ...prev,
-        title: "",
-        message: ""
-      }));
+      toast.success("Notification sent!");
+      setFormData(prev => ({ ...prev, title: "", message: "" }));
     } catch (error: any) {
-      console.error("Failed to send notification:", error);
       toast.error(error.response?.data?.message || "Failed to send notification.");
     } finally {
       setLoading(false);
@@ -65,44 +56,36 @@ export default function NotificationsPage() {
     }
   };
 
-  const isFormValid = formData.title && formData.message && 
+  const isFormValid = formData.title && formData.message &&
     (formData.targetType !== "INDIVIDUAL" || formData.targetUserId);
 
-  const targetLabel = formData.targetType === "ALL" 
-    ? "all users" 
-    : formData.targetType === "ROLE" 
-      ? `all ${formData.targetRole.toLowerCase()}s` 
+  const targetLabel = formData.targetType === "ALL"
+    ? "all users"
+    : formData.targetType === "ROLE"
+      ? `all ${formData.targetRole.toLowerCase()}s`
       : `user ${formData.targetUserId}`;
 
   return (
-    <div className="space-y-8 pb-20 max-w-4xl">
+    <div className="space-y-6 md:space-y-8 pb-12 max-w-4xl">
       <AdminHeader
-        title="Send Notification"
+        title="Notifications"
         description="Send push notifications and in-app alerts to users."
       />
 
       {/* Compose */}
-      <div className="bg-white border border-border/50 rounded-[32px] overflow-hidden shadow-sm p-8">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-            <Megaphone size={24} />
-          </div>
-          <div>
-            <AdminText variant="bold" size="lg">Write Your Message</AdminText>
-            <AdminText size="xs" color="secondary">This will be sent as both a push notification and an in-app alert.</AdminText>
-          </div>
-        </div>
+      <div className="bg-white border border-black/5 rounded-2xl p-6">
+        <h3 className="text-sm font-black mb-5">Message</h3>
 
-        <div className="space-y-6">
-          <AdminInput 
-            label="Title" 
+        <div className="space-y-5">
+          <AdminInput
+            label="Title"
             placeholder="e.g. Important Update"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           />
 
-          <AdminTextArea 
-            label="Message" 
+          <AdminTextArea
+            label="Message"
             placeholder="Write your message here..."
             rows={4}
             value={formData.message}
@@ -110,9 +93,9 @@ export default function NotificationsPage() {
           />
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-secondary ml-1">Notification Type</label>
-            <select 
-              className="w-full px-4 py-3 bg-surface border border-border/50 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-plus-jakarta text-sm"
+            <label className="text-xs font-bold text-black/40 ml-1">Type</label>
+            <select
+              className="w-full px-4 py-3 bg-black/[0.02] border border-black/5 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
             >
@@ -123,56 +106,46 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      {/* Who to send to */}
-      <div className="bg-white border border-border/50 rounded-[32px] overflow-hidden shadow-sm p-8">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-secondary/10 rounded-2xl text-secondary">
-            <Users size={24} />
-          </div>
-          <div>
-            <AdminText variant="bold" size="lg">Who should receive this?</AdminText>
-            <AdminText size="xs" color="secondary">Choose who gets the notification.</AdminText>
-          </div>
-        </div>
+      {/* Audience */}
+      <div className="bg-white border border-black/5 rounded-2xl p-6">
+        <h3 className="text-sm font-black mb-5">Audience</h3>
 
-        <div className="space-y-6">
-          <div className="flex flex-wrap gap-4">
+        <div className="space-y-5">
+          <div className="flex flex-wrap gap-3">
             {[
-              { id: "ALL", label: "Everyone", icon: Megaphone },
-              { id: "ROLE", label: "By Role", icon: Users },
-              { id: "INDIVIDUAL", label: "One User", icon: User }
-            ].map((target) => (
+              { id: "ALL", label: "Everyone", Icon: Megaphone },
+              { id: "ROLE", label: "By Role", Icon: UsersThree },
+              { id: "INDIVIDUAL", label: "One User", Icon: User }
+            ].map(({ id, label, Icon }) => (
               <button
-                key={target.id}
-                onClick={() => setFormData({ ...formData, targetType: target.id })}
+                key={id}
+                onClick={() => setFormData({ ...formData, targetType: id })}
                 className={cn(
-                  "flex items-center gap-2 px-6 py-3 rounded-2xl border transition-all",
-                  formData.targetType === target.id 
-                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
-                    : "bg-white border-border/50 text-secondary hover:bg-surface"
+                  "flex items-center gap-2 px-5 py-2.5 rounded-xl border text-xs font-bold transition-all",
+                  formData.targetType === id
+                    ? "bg-primary text-white border-primary"
+                    : "bg-white border-black/5 text-black/40 hover:bg-black/[0.02]"
                 )}
               >
-                <target.icon size={16} />
-                <AdminText variant="bold" size="xs" className={formData.targetType === target.id ? "text-white" : "text-secondary"}>
-                  {target.label}
-                </AdminText>
+                <Icon size={16} weight="bold" />
+                {label}
               </button>
             ))}
           </div>
 
           {formData.targetType === "ROLE" && (
-            <div className="p-6 bg-surface rounded-[24px] border border-border/30 animate-in fade-in slide-in-from-top-2 duration-300">
-              <label className="text-sm font-bold text-secondary mb-3 block">Pick a role</label>
-              <div className="flex gap-3">
+            <div className="p-4 bg-black/[0.02] rounded-xl border border-black/5">
+              <label className="text-xs font-bold text-black/40 mb-2 block">Pick a role</label>
+              <div className="flex gap-2">
                 {["CLIENT", "AGENT"].map((role) => (
                   <button
                     key={role}
                     onClick={() => setFormData({ ...formData, targetRole: role })}
                     className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold transition-all",
-                      formData.targetRole === role 
-                        ? "bg-secondary text-white" 
-                        : "bg-white border border-border/50 text-secondary"
+                      "px-4 py-2 rounded-lg text-xs font-bold transition-all",
+                      formData.targetRole === role
+                        ? "bg-secondary text-white"
+                        : "bg-white border border-black/5 text-black/40"
                     )}
                   >
                     {role === "CLIENT" ? "Clients" : "Agents"}
@@ -183,44 +156,40 @@ export default function NotificationsPage() {
           )}
 
           {formData.targetType === "INDIVIDUAL" && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-              <AdminInput 
-                label="User ID" 
+            <div>
+              <AdminInput
+                label="User ID"
                 placeholder="Paste the user's ID here..."
                 value={formData.targetUserId}
                 onChange={(e) => setFormData({ ...formData, targetUserId: e.target.value })}
               />
-              <AdminText size="xs" color="secondary" className="mt-2 ml-1">
-                You can find user IDs on the Users page.
-              </AdminText>
+              <p className="text-[10px] text-black/20 mt-1.5 ml-1">You can find user IDs on the Users page.</p>
             </div>
           )}
         </div>
 
-        <div className="mt-10 pt-8 border-t border-border/30">
-          <AdminButton 
-            variant="primary" 
-            fullWidth 
-            className="gap-2 h-14 rounded-2xl"
+        <div className="mt-8 pt-6 border-t border-black/5">
+          <button
             disabled={!isFormValid || loading}
             onClick={() => setShowConfirmModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? <RefreshCcw size={18} className="animate-spin" /> : <Send size={18} />}
+            {loading ? <SpinnerGap size={18} weight="bold" className="animate-spin" /> : <PaperPlaneTilt size={18} weight="bold" />}
             Send Notification
-          </AdminButton>
+          </button>
         </div>
       </div>
 
       {/* Warning */}
       <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 flex items-start gap-3">
-        <AlertTriangle size={18} className="text-amber-500 mt-0.5 shrink-0" />
-        <AdminText size="xs" color="secondary">
-          <strong>Heads up:</strong> This sends a real push notification to real users. It cannot be undone. 
+        <Warning size={18} weight="fill" className="text-amber-500 mt-0.5 shrink-0" />
+        <p className="text-xs text-black/40">
+          <strong>Heads up:</strong> This sends a real push notification to real users. It cannot be undone.
           Double-check your message and audience before sending.
-        </AdminText>
+        </p>
       </div>
 
-      <AdminConsentModal 
+      <AdminConsentModal
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleSend}
@@ -229,6 +198,7 @@ export default function NotificationsPage() {
         confirmLabel="Yes, Send It"
         cancelLabel="Cancel"
         variant="primary"
+        loading={loading}
       />
     </div>
   );

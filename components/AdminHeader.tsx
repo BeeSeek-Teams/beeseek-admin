@@ -1,5 +1,4 @@
 import React from "react";
-import { AdminText } from "./AdminText";
 import { cn } from "@/lib/utils";
 
 interface AdminHeaderProps {
@@ -22,17 +21,17 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   const headerActions = actions || action;
 
   return (
-    <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8", className)}>
-      <div className="flex items-center gap-4">
+    <div className={cn("flex flex-col md:flex-row md:items-center justify-between gap-4", className)}>
+      <div className="flex items-center gap-3">
         {backAction}
         <div>
-          <AdminText variant="bold" size="3xl" as="h1">
+          <h1 className="text-2xl md:text-3xl font-black text-primary tracking-tight">
             {title}
-          </AdminText>
+          </h1>
           {description && (
-            <AdminText color="secondary" size="sm" className="mt-1">
+            <p className="text-sm text-black/40 font-medium mt-1">
               {description}
-            </AdminText>
+            </p>
           )}
         </div>
       </div>

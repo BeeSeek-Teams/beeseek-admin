@@ -46,15 +46,15 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
 
   return (
     <div className="relative w-full aspect-[100/81.65] overflow-hidden flex items-center justify-center">
-      {/* HUD Accents */}
+      {/* Labels */}
       <div className="absolute top-8 left-8 flex flex-col gap-1 border-l border-primary/40 pl-3">
-        <span className="text-[10px] font-mono text-slate-400 tracking-widest uppercase">Region: West Africa</span>
-        <span className="text-xl font-mono text-slate-900 tracking-tight">SECTOR_NIGERIA</span>
+        <span className="text-[10px] font-mono text-black/30 tracking-widest uppercase">West Africa</span>
+        <span className="text-xl font-mono text-black tracking-tight">Nigeria</span>
       </div>
       
       <div className="absolute bottom-8 right-8 text-right flex flex-col gap-1 border-r border-primary/40 pr-3">
-        <span className="text-[10px] font-mono text-slate-400 tracking-widest uppercase">Live Status</span>
-        <span className="text-sm font-mono text-success uppercase font-bold">Operational_Active</span>
+        <span className="text-[10px] font-mono text-black/30 tracking-widest uppercase">Status</span>
+        <span className="text-sm font-mono text-success uppercase font-bold">Active</span>
       </div>
 
       <svg viewBox="0 0 100 81.65" className="w-full h-full">
@@ -159,35 +159,35 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
                 transform: 'translate(-50%, calc(-100% - 12px))'
             }}
           >
-            <div className="bg-white border border-border/50 backdrop-blur-md p-4 rounded-2xl shadow-xl min-w-[200px]">
+              <div className="bg-white border border-black/5 backdrop-blur-md p-4 rounded-2xl shadow-xl min-w-[200px]">
               <div className="flex items-center justify-between mb-2">
                 <div className={`px-2 py-0.5 rounded-full text-[9px] font-mono tracking-tighter uppercase ${
                   hoveredMarker.type === 'bee' ? 'bg-orange-100/50 text-orange-700 border border-orange-300/50' : 
                   hoveredMarker.type === 'agent' ? 'bg-teal-100/50 text-teal-700 border border-teal-300/50' : 
                   'bg-blue-100/50 text-blue-700 border border-blue-300/50'
                 }`}>
-                  {hoveredMarker.type === 'bee' ? 'Service Bee' : hoveredMarker.type === 'agent' ? 'Agent' : 'Client'}
+                  {hoveredMarker.type === 'bee' ? 'Service' : hoveredMarker.type === 'agent' ? 'Agent' : 'Client'}
                 </div>
-                <span className="text-[10px] font-mono text-slate-400">ID: {hoveredMarker.id.slice(0, 8)}</span>
+                <span className="text-[10px] font-mono text-black/30">ID: {hoveredMarker.id.slice(0, 8)}</span>
               </div>
               <div className="font-mono">
-                <div className="text-slate-900 text-sm font-bold leading-tight">{hoveredMarker.label}</div>
-                <div className="text-slate-500 text-[11px] mt-1">{hoveredMarker.sublabel}</div>
+                <div className="text-black text-sm font-bold leading-tight">{hoveredMarker.label}</div>
+                <div className="text-black/40 text-[11px] mt-1">{hoveredMarker.sublabel}</div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+                <div className="mt-3 grid grid-cols-2 gap-2 border-t border-black/5 pt-3">
                 <div className="flex flex-col">
-                  <span className="text-[8px] uppercase text-slate-300 tracking-widest">Lat</span>
-                  <span className="text-[10px] text-slate-600 font-mono">{hoveredMarker.lat.toFixed(4)}</span>
+                  <span className="text-[8px] uppercase text-black/20 tracking-widest">Lat</span>
+                  <span className="text-[10px] text-black/50 font-mono">{hoveredMarker.lat.toFixed(4)}</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[8px] uppercase text-slate-300 tracking-widest">Lng</span>
-                  <span className="text-[10px] text-slate-600 font-mono">{hoveredMarker.lng.toFixed(4)}</span>
+                  <span className="text-[8px] uppercase text-black/20 tracking-widest">Lng</span>
+                  <span className="text-[10px] text-black/50 font-mono">{hoveredMarker.lng.toFixed(4)}</span>
                 </div>
               </div>
             </div>
             {/* Pointer SVG */}
             <div className="w-full flex justify-center -mt-0.5">
-              <div className="w-px h-6 bg-gradient-to-b from-slate-200 to-transparent" />
+              <div className="w-px h-6 bg-gradient-to-b from-black/10 to-transparent" />
             </div>
           </motion.div>
         )}
@@ -197,15 +197,15 @@ export const NigeriaSpyMap: React.FC<NigeriaSpyMapProps> = ({ markers }) => {
       <div className="absolute top-4 right-4 md:top-8 md:right-8 flex flex-col gap-2 md:gap-4 bg-white/80 md:bg-transparent p-2 md:p-0 rounded-xl">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: '#FF6B35' }} />
-          <span className="text-[10px] font-mono text-slate-500 tracking-wider">Service_Bees</span>
+          <span className="text-[10px] font-mono text-black/40 tracking-wider">Services</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: '#4ECDC4' }} />
-          <span className="text-[10px] font-mono text-slate-500 tracking-wider">Agents</span>
+          <span className="text-[10px] font-mono text-black/40 tracking-wider">Agents</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: '#1E90FF' }} />
-          <span className="text-[10px] font-mono text-slate-500 tracking-wider">Clients</span>
+          <span className="text-[10px] font-mono text-black/40 tracking-wider">Clients</span>
         </div>
       </div>
     </div>

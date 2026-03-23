@@ -1,22 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Users, 
-  Trash2, 
-  Plus, 
-  ShieldCheck, 
-  Mail, 
-  ArrowLeft,
+import {
+  UsersThree,
+  Trash,
+  Plus,
+  ShieldCheck,
+  Envelope,
   X,
-  Check,
-  LogOut,
+  SignOut,
   Eye,
-  EyeOff
-} from "lucide-react";
+  EyeSlash,
+  SpinnerGap
+} from "@phosphor-icons/react";
 import { AdminHeader } from "@/components/AdminHeader";
-import { AdminText } from "@/components/AdminText";
-import { AdminButton } from "@/components/AdminButton";
 import { AdminInput } from "@/components/AdminInput";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
@@ -64,7 +61,7 @@ export default function QueenDashboard() {
       const data = await resp.json();
       setAdmins(data);
     } catch (err) {
-      addAlert("error", "Failed to synchronize with hive relay.");
+      addAlert("error", "Failed to load admin accounts.");
     } finally {
       setLoading(false);
     }
@@ -97,9 +94,9 @@ export default function QueenDashboard() {
       setShowAddModal(false);
       setNewAdmin({ firstName: "", lastName: "", email: "", role: "SUPPORT", password: "" });
       fetchAdmins();
-      addAlert("success", "Administrative node deployed successfully.");
+      addAlert("success", "Admin account created.");
     } catch (err) {
-      addAlert("error", "Failed to deploy node. Ensure credentials are unique.");
+      addAlert("error", "Failed to create admin. Ensure email is unique.");
     }
   };
 
@@ -108,9 +105,9 @@ export default function QueenDashboard() {
       const resp = await fetch(`/api/queen-proxy/users/admin/${id}`, { method: 'DELETE' });
       if (!resp.ok) throw new Error('Failed');
       fetchAdmins();
-      addAlert("success", "Node decommissioned from hive.");
+      addAlert("success", "Admin account removed.");
     } catch (err) {
-      addAlert("error", "Failed to decommissioning node.");
+      addAlert("error", "Failed to remove admin.");
     }
   };
 
@@ -132,127 +129,131 @@ export default function QueenDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck size={16} className="text-white" />
-                <AdminText size="xs" variant="bold" color="white" className="uppercase tracking-widest">Root Console</AdminText>
+              <ShieldCheck size={16} weight="fill" className="text-white/40" />
+              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Root Console</span>
             </div>
-            <AdminText variant="bold" size="3xl" color="white">Queen Bee Dashboard</AdminText>
-            <AdminText color="white" className="mt-1">Manage administrative nodes and access levels.</AdminText>
+            <h1 className="text-3xl font-black text-white">Admin Accounts</h1>
+            <p className="text-sm text-white/40 mt-1">Manage admin access and roles.</p>
           </div>
           <div className="flex items-center gap-3">
-            <AdminButton variant="outline" onClick={() => setShowExitConsent(true)} className="gap-2 px-6 border-white/20 text-white hover:bg-white/5">
-              <LogOut size={18} className="text-white" />
-              Exit Console
-            </AdminButton>
-            <AdminButton onClick={() => setShowAddModal(true)} className="gap-2 px-6 text-white">
-              <Plus size={18} className="text-white" />
+            <button
+              onClick={() => setShowExitConsent(true)}
+              className="flex items-center gap-2 px-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-white/50 hover:bg-white/5 transition-colors"
+            >
+              <SignOut size={16} weight="bold" />
+              Exit
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary rounded-xl text-xs font-bold text-white hover:opacity-90 transition-opacity"
+            >
+              <Plus size={16} weight="bold" />
               Add Account
-            </AdminButton>
+            </button>
           </div>
         </div>
 
         <AdminTable 
           headers={["Administrator", "Role", "Email", "Status", "Actions"]}
           className="bg-[#021027] border-white/10"
-          headerColor="white"
         >
           {admins.map((admin) => (
             <AdminTableRow key={admin.id} className="hover:bg-white/5 border-white/5">
               <AdminTableCell>
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold">
-                        {admin.firstName?.[0]}
-                    </div>
-                    <AdminText variant="bold" size="sm" color="white">{admin.firstName} {admin.lastName}</AdminText>
+                  <div className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-xs">
+                    {admin.firstName?.[0]}
+                  </div>
+                  <span className="text-sm font-bold text-white">{admin.firstName} {admin.lastName}</span>
                 </div>
               </AdminTableCell>
               <AdminTableCell>
                 <AdminBadge variant="primary" className="bg-primary/20 text-white border-primary/20">{admin.role}</AdminBadge>
               </AdminTableCell>
               <AdminTableCell>
-                <div 
-                  className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                <button 
+                  className="flex items-center gap-2 text-white/60 hover:text-white transition-colors"
                   onClick={() => {
                     navigator.clipboard.writeText(admin.email);
-                    addAlert("success", "Email address stored in neural buffer (copied).");
+                    addAlert("success", "Email copied.");
                   }}
                 >
-                    <Mail size={14} className="text-white" />
-                    <AdminText size="sm" color="white">{admin.email}</AdminText>
-                </div>
+                  <Envelope size={14} weight="bold" />
+                  <span className="text-xs">{admin.email}</span>
+                </button>
               </AdminTableCell>
               <AdminTableCell>
                 <AdminBadge variant="success" className="bg-success/20 text-white border-success/20">Active</AdminBadge>
               </AdminTableCell>
               <AdminTableCell>
-                <AdminButton 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-white hover:bg-white/10"
-                    onClick={() => setConsentModal({
-                      isOpen: true,
-                      adminId: admin.id,
-                      adminName: `${admin.firstName} ${admin.lastName}`
-                    })}
+                <button
+                  className="p-2 text-white/30 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
+                  onClick={() => setConsentModal({
+                    isOpen: true,
+                    adminId: admin.id,
+                    adminName: `${admin.firstName} ${admin.lastName}`
+                  })}
                 >
-                  <Trash2 size={18} className="text-white" />
-                </AdminButton>
+                  <Trash size={16} weight="bold" />
+                </button>
               </AdminTableCell>
             </AdminTableRow>
           ))}
         </AdminTable>
 
         {admins.length === 0 && !loading && (
-          <div className="text-center py-32 bg-[#021027] rounded-[48px] border border-white/10 flex flex-col items-center gap-6">
-            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center text-white">
-              <Users size={40} className="text-white" />
+          <div className="text-center py-24 bg-[#021027] rounded-2xl border border-white/10 flex flex-col items-center gap-4">
+            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center">
+              <UsersThree size={32} weight="duotone" className="text-white/20" />
             </div>
             <div>
-              <AdminText variant="bold" size="xl" color="white">No Hive Nodes Detected</AdminText>
-              <AdminText color="white" className="mt-1">
-                You haven't added any administrators yet. Deploy your first admin node to begin.
-              </AdminText>
+              <h3 className="text-lg font-black text-white">No admins yet</h3>
+              <p className="text-sm text-white/30 mt-1">Add your first admin account to get started.</p>
             </div>
-            <AdminButton onClick={() => setShowAddModal(true)} variant="outline" className="border-white/20 text-white hover:bg-white/5 mt-2">
-               <Plus size={18} className="text-white mr-2" />
-               Add First Admin
-            </AdminButton>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-white/50 hover:bg-white/5 transition-colors mt-2"
+            >
+              <Plus size={16} weight="bold" />
+              Add First Admin
+            </button>
           </div>
         )}
       </div>
 
       {/* Add Admin Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-[#000000]/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#021027] w-full max-w-lg rounded-[40px] overflow-hidden shadow-2xl border border-white/5 animate-in zoom-in-95 duration-200">
-            <div className="p-10 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#021027] w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl border border-white/5">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center">
               <div>
-                <AdminText variant="bold" size="xl" color="white">Add Administrator</AdminText>
-                <AdminText size="xs" color="white">Deploy a new admin node with specific permissions.</AdminText>
+                <h2 className="text-lg font-black text-white">Add Administrator</h2>
+                <p className="text-xs text-white/30 mt-0.5">Create a new admin account.</p>
               </div>
               <button onClick={() => {
                 setShowAddModal(false);
                 setShowPassword(false);
-              }} className="p-2 hover:bg-white/5 text-white rounded-full transition-colors font-bold">
-                <X size={20} />
+              }} className="p-2 hover:bg-white/5 text-white/30 rounded-xl transition-colors">
+                <X size={20} weight="bold" />
               </button>
             </div>
-            <form onSubmit={handleCreate} className="p-10 space-y-6">
+            <form onSubmit={handleCreate} className="p-6 space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <AdminInput 
-                    label="First Name" 
-                    labelClassName="text-white"
-                    required 
-                    value={newAdmin.firstName}
-                    onChange={e => setNewAdmin({...newAdmin, firstName: e.target.value})}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                  label="First Name" 
+                  labelClassName="text-white"
+                  required 
+                  value={newAdmin.firstName}
+                  onChange={e => setNewAdmin({...newAdmin, firstName: e.target.value})}
+                  className="bg-white/10 border-white/10 text-white placeholder:text-white/30"
                 />
                 <AdminInput 
-                    label="Last Name" 
-                    labelClassName="text-white"
-                    required 
-                    value={newAdmin.lastName}
-                    onChange={e => setNewAdmin({...newAdmin, lastName: e.target.value})}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                  label="Last Name" 
+                  labelClassName="text-white"
+                  required 
+                  value={newAdmin.lastName}
+                  onChange={e => setNewAdmin({...newAdmin, lastName: e.target.value})}
+                  className="bg-white/10 border-white/10 text-white placeholder:text-white/30"
                 />
               </div>
               <AdminInput 
@@ -262,58 +263,66 @@ export default function QueenDashboard() {
                 required 
                 value={newAdmin.email}
                 onChange={e => setNewAdmin({...newAdmin, email: e.target.value})}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                className="bg-white/10 border-white/10 text-white placeholder:text-white/30"
               />
               <div className="space-y-2">
-                <label className="text-sm font-bold text-white ml-1">Access Level (Role)</label>
+                <label className="text-xs font-bold text-white/40 ml-1">Role</label>
                 <select 
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 transition-all font-plus-jakarta text-sm text-white appearance-none cursor-pointer"
-                    value={newAdmin.role}
-                    onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm text-white appearance-none cursor-pointer"
+                  value={newAdmin.role}
+                  onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}
                 >
-                    <option value="SUPPORT" className="bg-[#021027]">SUPPORT</option>
-                    <option value="MODERATOR" className="bg-[#021027]">MODERATOR</option>
-                    <option value="ADMIN" className="bg-[#021027]">ADMIN</option>
-                    <option value="SUPER_ADMIN" className="bg-[#021027]">SUPER_ADMIN</option>
+                  <option value="SUPPORT" className="bg-[#021027]">SUPPORT</option>
+                  <option value="MODERATOR" className="bg-[#021027]">MODERATOR</option>
+                  <option value="ADMIN" className="bg-[#021027]">ADMIN</option>
+                  <option value="SUPER_ADMIN" className="bg-[#021027]">SUPER_ADMIN</option>
                 </select>
               </div>
               <AdminInput 
-                label="Initial Password" 
+                label="Password" 
                 labelClassName="text-white"
                 type={showPassword ? "text" : "password"} 
                 placeholder="Leave blank for default"
                 value={newAdmin.password}
                 onChange={e => setNewAdmin({...newAdmin, password: e.target.value})}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                className="bg-white/10 border-white/10 text-white placeholder:text-white/30"
                 endIcon={
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-white/40 hover:text-white transition-colors"
+                    className="text-white/30 hover:text-white transition-colors"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
                   </button>
                 }
               />
-              <div className="pt-4 flex gap-3">
-                <AdminButton variant="outline" type="button" fullWidth onClick={() => {
-                  setShowAddModal(false);
-                  setShowPassword(false);
-                }} className="border-white/20 text-white hover:bg-white/10">Cancel</AdminButton>
-                <AdminButton type="submit" fullWidth className="text-white">Create Account</AdminButton>
+              <div className="pt-3 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowAddModal(false); setShowPassword(false); }}
+                  className="flex-1 px-4 py-3 border border-white/10 rounded-xl text-sm font-bold text-white/40 hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
+                >
+                  Create Account
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Consent Modal */}
+      {/* Delete Consent Modal */}
       <AdminConsentModal 
         isOpen={consentModal.isOpen}
-        title="Sever Hive Link?"
-        description={`This will permanently decommission ${consentModal.adminName}'s access to the Beeseek network. This action is recorded in the root logs and cannot be undone.`}
-        confirmLabel="Decommission Node"
-        cancelLabel="Keep Node"
+        title="Remove this admin?"
+        description={`${consentModal.adminName} will permanently lose access to the admin panel. This cannot be undone.`}
+        confirmLabel="Remove"
+        cancelLabel="Keep"
         variant="danger"
         onClose={() => setConsentModal({...consentModal, isOpen: false})}
         onConfirm={() => handleDelete(consentModal.adminId)}
@@ -322,11 +331,11 @@ export default function QueenDashboard() {
       {/* Exit Consent Modal */}
       <AdminConsentModal 
         isOpen={showExitConsent}
-        title="Exit Root Console?"
-        description="This will terminate your secure session and return you to the public login interface. Neural buffer and session keys will be purged."
-        confirmLabel="Confirm Exit"
-        cancelLabel="Stay Logged In"
-        variant="warning"
+        title="Exit root console?"
+        description="Your session will end and you'll be returned to the login page."
+        confirmLabel="Exit"
+        cancelLabel="Stay"
+        variant="danger"
         onClose={() => setShowExitConsent(false)}
         onConfirm={handleExit}
       />

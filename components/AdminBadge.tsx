@@ -17,17 +17,17 @@ export const AdminBadge: React.FC<AdminBadgeProps> = ({
   className 
 }) => {
   const variants = {
-    success: "bg-success/10 text-success border-success/20",
-    error: "bg-error/10 text-error border-error/20",
-    warning: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    info: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    primary: "bg-primary/10 text-primary border-primary/20",
-    secondary: "bg-surface text-secondary border-border/50",
+    success: "bg-green-50 text-green-600",
+    error: "bg-red-50 text-red-500",
+    warning: "bg-amber-50 text-amber-600",
+    info: "bg-blue-50 text-blue-600",
+    primary: "bg-primary/10 text-primary",
+    secondary: "bg-black/5 text-black/40",
   };
 
   return (
     <span className={cn(
-      "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+      "px-2.5 py-1 rounded-lg text-[10px] font-bold",
       variants[variant],
       className
     )}>
