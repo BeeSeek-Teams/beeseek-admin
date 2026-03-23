@@ -50,9 +50,9 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl p-8 border border-black/5">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-4">
+          {/* <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-4">
             <span className="text-white font-black text-lg">B</span>
-          </div>
+          </div> */}
           <h1 className="text-xl font-black text-primary">BeeSeek Admin</h1>
           <p className="text-xs text-black/30 mt-1">Sign in to continue</p>
         </div>
