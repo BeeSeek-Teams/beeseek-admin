@@ -1,0 +1,12 @@
+Agent app
+
+Email:    review@beeseek.site
+Password: BeeSeek@Review2026!
+Phone:    +1 (555) 000-0001
+
+
+Client app
+
+Email:    reviewclient@beeseek.site
+Password: BeeSeek@Review2026!
+Phone:    +1 (555) 000-0002

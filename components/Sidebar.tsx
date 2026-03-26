@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   HouseSimple,
   Users,
+  UserMinus,
   ShieldCheck,
   ChatCircle,
   SignOut,
@@ -123,6 +124,12 @@ const menuItems = [
     icon: Users, 
     label: "User Control", 
     href: "/users",
+    roles: ["ADMIN", "SUPER_ADMIN"]
+  },
+  { 
+    icon: UserMinus, 
+    label: "Deletion Requests", 
+    href: "/deletion-requests",
     roles: ["ADMIN", "SUPER_ADMIN"]
   },
 ];
