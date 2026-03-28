@@ -26,6 +26,11 @@ export interface Bee {
   images: string[];
   clientRequirements: string;
   isActive: boolean;
+  flagCount: number;
+  isFlagged: boolean;
+  lastFlagReason: string | null;
+  lastFlaggedAt: string | null;
+  flaggedBy: string | null;
   totalViews: number;
   totalHires: number;
   jobsCompleted: number;
@@ -76,4 +81,9 @@ export const toggleBeeActive = async (id: string): Promise<Bee> => {
 
 export const deleteBee = async (id: string): Promise<void> => {
   await api.delete(`/bees/admin/${id}`);
+};
+
+export const flagBee = async (id: string, reason: string, adminId: string): Promise<Bee & { consequence: string }> => {
+  const response = await api.post(`/bees/admin/${id}/flag`, { reason, adminId });
+  return response.data;
 };

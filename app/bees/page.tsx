@@ -42,6 +42,7 @@ export default function BeesPage() {
   const itemsPerPage = 15;
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Bee | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<Bee | null>(null);
 
   const fetchBees = useCallback(async (
     searchQuery = search,
@@ -118,6 +119,12 @@ export default function BeesPage() {
   };
 
   const handleToggleActive = async (bee: Bee) => {
+    setToggleTarget(bee);
+  };
+
+  const confirmToggleActive = async () => {
+    if (!toggleTarget) return;
+    const bee = toggleTarget;
     try {
       setProcessingId(bee.id);
       const updated = await toggleBeeActive(bee.id);
@@ -128,6 +135,7 @@ export default function BeesPage() {
       toast.error("Couldn't update status");
     } finally {
       setProcessingId(null);
+      setToggleTarget(null);
     }
   };
 
@@ -150,6 +158,7 @@ export default function BeesPage() {
 
   const formatCurrency = (amount: any) => {
     const safeAmount = Number(amount || 0);
+    if (safeAmount === 0) return "Negotiable";
     return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(safeAmount);
   };
 
@@ -165,6 +174,20 @@ export default function BeesPage() {
         description={`"${deleteTarget?.title}" by ${deleteTarget?.agent?.firstName} ${deleteTarget?.agent?.lastName} will be permanently removed.`}
         confirmLabel="Delete"
         variant="danger"
+        loading={!!processingId}
+      />
+
+      <AdminConsentModal
+        isOpen={!!toggleTarget}
+        onClose={() => setToggleTarget(null)}
+        onConfirm={confirmToggleActive}
+        title={toggleTarget?.isActive ? "Deactivate this listing?" : "Activate this listing?"}
+        description={toggleTarget?.isActive
+          ? `"${toggleTarget?.title}" will be hidden from search results and the agent will be notified by email.`
+          : `"${toggleTarget?.title}" will be visible in search results again.`
+        }
+        confirmLabel={toggleTarget?.isActive ? "Deactivate" : "Activate"}
+        variant={toggleTarget?.isActive ? "danger" : "primary"}
         loading={!!processingId}
       />
 

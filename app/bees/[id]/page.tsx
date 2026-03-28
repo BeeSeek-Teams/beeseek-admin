@@ -23,12 +23,15 @@ import {
   Images,
   ClipboardText,
   Lightning,
+  Flag,
+  Warning,
 } from "@phosphor-icons/react";
 import { useRouter, useParams } from "next/navigation";
 import { AdminHeader } from "@/components/AdminHeader";
 import { AdminBadge } from "@/components/AdminBadge";
 import { AdminConsentModal } from "@/components/AdminConsentModal";
-import { getBeeDetails, toggleBeeActive, deleteBee, Bee } from "@/lib/bees";
+import { getBeeDetails, toggleBeeActive, deleteBee, flagBee, Bee } from "@/lib/bees";
+import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -39,7 +42,11 @@ export default function BeeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Bee | null>(null);
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [showFlagModal, setShowFlagModal] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const adminUser = useAuthStore((s) => s.user);
 
   const fetchBee = async () => {
     try {
@@ -60,6 +67,7 @@ export default function BeeDetailPage() {
 
   const formatCurrency = (amount: any) => {
     const safeAmount = Number(amount || 0);
+    if (safeAmount === 0) return "Negotiable";
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
@@ -68,6 +76,10 @@ export default function BeeDetailPage() {
   };
 
   const handleToggleActive = async () => {
+    setShowToggleModal(true);
+  };
+
+  const confirmToggleActive = async () => {
     if (!bee) return;
     try {
       setProcessingId(bee.id);
@@ -78,6 +90,7 @@ export default function BeeDetailPage() {
       toast.error("Couldn't update status");
     } finally {
       setProcessingId(null);
+      setShowToggleModal(false);
     }
   };
 
@@ -92,6 +105,38 @@ export default function BeeDetailPage() {
       toast.error("Couldn't delete listing");
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleFlag = async () => {
+    if (!bee || !flagReason.trim()) return;
+    try {
+      setProcessingId(bee.id);
+      const result = await flagBee(bee.id, flagReason.trim(), adminUser?.id || "admin");
+      setBee((prev) =>
+        prev
+          ? {
+              ...prev,
+              flagCount: result.flagCount,
+              isFlagged: result.isFlagged,
+              lastFlagReason: result.lastFlagReason,
+              lastFlaggedAt: result.lastFlaggedAt,
+              isActive: result.isActive,
+            }
+          : prev,
+      );
+      const consequenceMessages: Record<string, string> = {
+        WARNING: "Listing flagged — warning sent to agent",
+        DEACTIVATED: "Listing flagged and deactivated — agent notified",
+        SUSPENDED: "Listing flagged, deactivated, and agent suspended for 7 days",
+      };
+      toast.success(consequenceMessages[result.consequence] || "Listing flagged");
+    } catch {
+      toast.error("Couldn't flag listing");
+    } finally {
+      setProcessingId(null);
+      setShowFlagModal(false);
+      setFlagReason("");
     }
   };
 
@@ -124,6 +169,64 @@ export default function BeeDetailPage() {
         variant="danger"
         loading={!!processingId}
       />
+
+      <AdminConsentModal
+        isOpen={showToggleModal}
+        onClose={() => setShowToggleModal(false)}
+        onConfirm={confirmToggleActive}
+        title={bee?.isActive ? "Deactivate this listing?" : "Activate this listing?"}
+        description={bee?.isActive
+          ? `"${bee?.title}" will be hidden from search results and the agent will be notified by email.`
+          : `"${bee?.title}" will be visible in search results again.`
+        }
+        confirmLabel={bee?.isActive ? "Deactivate" : "Activate"}
+        variant={bee?.isActive ? "danger" : "primary"}
+        loading={!!processingId}
+      />
+
+      {/* Flag Modal */}
+      {showFlagModal && (
+        <div className="fixed inset-0 z-[80] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setShowFlagModal(false); setFlagReason(""); }}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+                <Flag size={20} weight="fill" className="text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-primary">Flag this listing</h3>
+                <p className="text-[10px] text-black/30 mt-0.5">
+                  Flag #{(bee?.flagCount || 0) + 1} — {(bee?.flagCount || 0) === 0 ? "Warning will be sent" : (bee?.flagCount || 0) === 1 ? "Listing will be deactivated" : "Agent account will be suspended"}
+                </p>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-black/40 block mb-2">Reason for flagging</label>
+              <textarea
+                value={flagReason}
+                onChange={(e) => setFlagReason(e.target.value)}
+                placeholder="Describe the issue with this listing..."
+                className="w-full h-24 px-4 py-3 text-xs border border-black/10 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 placeholder:text-black/20"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowFlagModal(false); setFlagReason(""); }}
+                className="flex-1 px-4 py-2.5 text-xs font-bold text-black/40 bg-black/[0.03] rounded-xl hover:bg-black/[0.06] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleFlag}
+                disabled={!flagReason.trim() || !!processingId}
+                className="flex-1 px-4 py-2.5 text-xs font-bold text-white bg-orange-600 rounded-xl hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {processingId ? <SpinnerGap size={14} weight="bold" className="animate-spin" /> : <Flag size={14} weight="bold" />}
+                Flag Listing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Back + Header */}
       <div className="flex items-center justify-between">
@@ -158,6 +261,14 @@ export default function BeeDetailPage() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowFlagModal(true)}
+            disabled={!!processingId}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-orange-50 text-orange-600 border border-orange-100 hover:bg-orange-100 transition-colors disabled:opacity-50"
+          >
+            <Flag size={14} weight="bold" />
+            Flag {bee.flagCount > 0 ? `(${bee.flagCount})` : ""}
+          </button>
+          <button
             onClick={handleToggleActive}
             disabled={!!processingId}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors border disabled:opacity-50 ${
@@ -185,6 +296,26 @@ export default function BeeDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Flag Banner */}
+      {bee.isFlagged && bee.flagCount > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-start gap-3">
+          <Warning size={20} weight="fill" className="text-orange-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-orange-800">
+              This listing has been flagged {bee.flagCount} time{bee.flagCount > 1 ? "s" : ""}
+            </p>
+            {bee.lastFlagReason && (
+              <p className="text-[11px] text-orange-700/70 mt-1">Last reason: {bee.lastFlagReason}</p>
+            )}
+            {bee.lastFlaggedAt && (
+              <p className="text-[10px] text-orange-600/50 mt-1">
+                Last flagged: {format(new Date(bee.lastFlaggedAt), "MMM dd, yyyy 'at' h:mm a")}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Left Column */}
@@ -354,7 +485,7 @@ export default function BeeDetailPage() {
             </div>
             <div className="space-y-3">
               <div className="p-4 bg-primary/5 rounded-xl">
-                <p className="text-[10px] font-bold text-black/25">BASE PRICE</p>
+                <p className="text-[10px] font-bold text-black/25">{Number(bee.price) > 0 ? 'BASE PRICE' : 'PRICING'}</p>
                 <p className="text-2xl font-black text-primary mt-1">
                   {formatCurrency(Number(bee.price))}
                 </p>

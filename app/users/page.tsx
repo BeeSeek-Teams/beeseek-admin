@@ -5,9 +5,7 @@ import {
   MagnifyingGlass, 
   Envelope, 
   Phone,
-  Prohibit,
   ArrowClockwise,
-  CheckCircle,
   Eye,
   SpinnerGap
 } from "@phosphor-icons/react";
@@ -16,8 +14,7 @@ import { AdminInput } from "@/components/AdminInput";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
 import { AdminPagination } from "@/components/AdminPagination";
-import { AdminConsentModal } from "@/components/AdminConsentModal";
-import { getUsers, toggleBlockUser, getUserDetails, User } from "@/lib/users";
+import { getUsers, getUserDetails, User } from "@/lib/users";
 import { AdminUserDetailModal } from "@/components/AdminUserDetailModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -36,7 +33,7 @@ export default function UsersPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [blockModal, setBlockModal] = useState<{ userId: string; userName: string; currentStatus: string } | null>(null);
+
 
   const fetchUsers = useCallback(async (searchQuery = search, role = roleFilter, ninStatus = ninStatusFilter, page = currentPage) => {
     try {
@@ -97,21 +94,7 @@ export default function UsersPage() {
     fetchUsers(search, roleFilter, ninStatusFilter, page);
   };
 
-  const handleToggleBlock = async () => {
-    if (!blockModal) return;
-    const { userId, currentStatus } = blockModal;
-    try {
-      setProcessingId(userId);
-      const result = await toggleBlockUser(userId);
-      toast.success(`User ${result.newStatus === 'BLOCKED' ? 'blocked' : 'unblocked'}`);
-      setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: result.newStatus } : u));
-    } catch (error) {
-      toast.error("Couldn't update user");
-    } finally {
-      setProcessingId(null);
-      setBlockModal(null);
-    }
-  };
+
 
   const handleViewDetails = async (userId: string) => {
     try {
@@ -135,19 +118,6 @@ export default function UsersPage() {
         onUpdate={fetchUsers}
       />
 
-      <AdminConsentModal
-        isOpen={!!blockModal}
-        onClose={() => setBlockModal(null)}
-        onConfirm={handleToggleBlock}
-        title={blockModal?.currentStatus === 'BLOCKED' ? 'Unblock this user?' : 'Block this user?'}
-        description={blockModal?.currentStatus === 'BLOCKED' 
-          ? `${blockModal?.userName} will regain full access to their account.`
-          : `${blockModal?.userName} will lose all access immediately. They won't be able to use the app.`
-        }
-        confirmLabel={blockModal?.currentStatus === 'BLOCKED' ? 'Unblock' : 'Block User'}
-        variant={blockModal?.currentStatus === 'BLOCKED' ? 'primary' : 'danger'}
-        loading={!!processingId}
-      />
 
       <AdminHeader 
         title="Users" 
@@ -285,37 +255,17 @@ export default function UsersPage() {
                   </p>
                 </AdminTableCell>
                 <AdminTableCell>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      className="p-2 rounded-lg text-black/20 hover:bg-black/[0.03] hover:text-primary transition-colors"
-                      onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleViewDetails(user.id); }}
-                      title="View details"
-                    >
+                  <button
+                    className="p-2 rounded-lg text-black/20 hover:bg-black/[0.03] hover:text-primary transition-colors"
+                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleViewDetails(user.id); }}
+                    title="View details"
+                  >
+                    {processingId === user.id ? (
+                      <SpinnerGap size={15} weight="bold" className="animate-spin" />
+                    ) : (
                       <Eye size={15} weight="bold" />
-                    </button>
-                    <button
-                      className={cn(
-                        "p-2 rounded-lg transition-colors",
-                        user.status === 'BLOCKED' 
-                          ? "text-black/20 hover:bg-green-50 hover:text-success" 
-                          : "text-black/20 hover:bg-red-50 hover:text-error"
-                      )}
-                      onClick={(e: React.MouseEvent) => { 
-                        e.stopPropagation(); 
-                        setBlockModal({ userId: user.id, userName: `${user.firstName} ${user.lastName}`, currentStatus: user.status }); 
-                      }}
-                      disabled={processingId === user.id}
-                      title={user.status === 'BLOCKED' ? 'Unblock' : 'Block'}
-                    >
-                      {processingId === user.id ? (
-                        <SpinnerGap size={15} weight="bold" className="animate-spin" />
-                      ) : user.status === 'BLOCKED' ? (
-                        <CheckCircle size={15} weight="bold" />
-                      ) : (
-                        <Prohibit size={15} weight="bold" />
-                      )}
-                    </button>
-                  </div>
+                    )}
+                  </button>
                 </AdminTableCell>
               </AdminTableRow>
             ))
