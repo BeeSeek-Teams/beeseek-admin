@@ -116,3 +116,40 @@ export const sendNinReminder = async (userId: string) => {
   const response = await api.post(`/users/${userId}/remind-nin`);
   return response.data;
 };
+
+// ─── Achievement API Functions ─────────────────────────────────────
+
+export const checkEarlyAccessEmails = async (emails: string[]): Promise<{
+  matched: { id: string; firstName: string; lastName: string; email: string; role: string; earlyAccessAchievement: boolean }[];
+  unmatched: string[];
+}> => {
+  const response = await api.post('/users/achievements/early-access/check', { emails });
+  return response.data;
+};
+
+export const grantEarlyAccessBulk = async (userIds: string[]): Promise<{
+  granted: string[];
+  skipped: string[];
+  failed: string[];
+}> => {
+  const response = await api.post('/users/achievements/early-access/grant-bulk', { userIds });
+  return response.data;
+};
+
+export const grantAchievement = async (userId: string, type: 'earlyAccess' | 'goldenBadge' | 'topRated') => {
+  const response = await api.post(`/users/${userId}/grant-achievement`, { type });
+  return response.data;
+};
+
+export const refreshTopRated = async (): Promise<{
+  newlyAwarded: { id: string; firstName: string; lastName: string; rating: number; completedJobs: number }[];
+  alreadyAwarded: number;
+}> => {
+  const response = await api.post('/users/achievements/refresh-top-rated');
+  return response.data;
+};
+
+export const getAchievementsLeaderboard = async (): Promise<any[]> => {
+  const response = await api.get('/users/achievements/leaderboard');
+  return response.data;
+};

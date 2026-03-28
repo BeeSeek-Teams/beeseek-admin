@@ -23,6 +23,7 @@ import {
   ShieldWarning,
   Siren,
   Wrench,
+  Trophy,
   X,
 } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -119,6 +120,12 @@ const menuItems = [
     label: "Bee Registry", 
     href: "/bees",
     roles: ["MODERATOR", "ADMIN", "SUPER_ADMIN"]
+  },
+  { 
+    icon: Trophy, 
+    label: "Achievements", 
+    href: "/achievements",
+    roles: ["ADMIN", "SUPER_ADMIN"]
   },
   { 
     icon: Users, 
