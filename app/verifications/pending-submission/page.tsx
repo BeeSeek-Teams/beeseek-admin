@@ -17,7 +17,7 @@ import { AdminInput } from "@/components/AdminInput";
 import { AdminTable, AdminTableRow, AdminTableCell } from "@/components/AdminTable";
 import { AdminBadge } from "@/components/AdminBadge";
 import { AdminPagination } from "@/components/AdminPagination";
-import { getUsers, getUserDetails, User } from "@/lib/users";
+import { getUsers, getUserDetails, sendNinReminder, User } from "@/lib/users";
 import { AdminUserDetailModal } from "@/components/AdminUserDetailModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -33,6 +33,7 @@ export default function PendingSubmissionPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [fetchingDetails, setFetchingDetails] = useState<string | null>(null);
+  const [remindingId, setRemindingId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async (searchQuery = search, page = currentPage) => {
     try {
@@ -85,6 +86,19 @@ export default function PendingSubmissionPage() {
       toast.error("Couldn't load user details");
     } finally {
       setFetchingDetails(null);
+    }
+  };
+
+  const handleSendReminder = async (e: React.MouseEvent, userId: string, name: string) => {
+    e.stopPropagation();
+    try {
+      setRemindingId(userId);
+      await sendNinReminder(userId);
+      toast.success(`Reminder sent to ${name}`);
+    } catch (error) {
+      toast.error("Failed to send reminder");
+    } finally {
+      setRemindingId(null);
     }
   };
 
@@ -192,18 +206,33 @@ export default function PendingSubmissionPage() {
                   <AdminBadge variant="warning">Not Submitted</AdminBadge>
                 </AdminTableCell>
                 <AdminTableCell>
-                  <button
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-black/30 hover:bg-black/[0.03] hover:text-primary rounded-lg text-[11px] font-bold transition-colors"
-                    onClick={(e) => { e.stopPropagation(); handleViewDetails(user.id); }}
-                    disabled={fetchingDetails === user.id}
-                  >
-                    {fetchingDetails === user.id ? (
-                      <SpinnerGap size={13} weight="bold" className="animate-spin" />
-                    ) : (
-                      <Eye size={13} weight="bold" />
-                    )}
-                    View
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-black/30 hover:bg-amber-50 hover:text-amber-600 rounded-lg text-[11px] font-bold transition-colors disabled:opacity-50"
+                      onClick={(e) => handleSendReminder(e, user.id, user.firstName)}
+                      disabled={remindingId === user.id}
+                      title="Send NIN reminder email"
+                    >
+                      {remindingId === user.id ? (
+                        <SpinnerGap size={13} weight="bold" className="animate-spin" />
+                      ) : (
+                        <Envelope size={13} weight="bold" />
+                      )}
+                      Remind
+                    </button>
+                    <button
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-black/30 hover:bg-black/[0.03] hover:text-primary rounded-lg text-[11px] font-bold transition-colors"
+                      onClick={(e) => { e.stopPropagation(); handleViewDetails(user.id); }}
+                      disabled={fetchingDetails === user.id}
+                    >
+                      {fetchingDetails === user.id ? (
+                        <SpinnerGap size={13} weight="bold" className="animate-spin" />
+                      ) : (
+                        <Eye size={13} weight="bold" />
+                      )}
+                      View
+                    </button>
+                  </div>
                 </AdminTableCell>
               </AdminTableRow>
             ))

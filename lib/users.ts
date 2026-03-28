@@ -111,3 +111,8 @@ export const unsuspendUser = async (userId: string) => {
   const response = await api.post(`/users/${userId}/unsuspend`);
   return response.data;
 };
+
+export const sendNinReminder = async (userId: string) => {
+  const response = await api.post(`/users/${userId}/remind-nin`);
+  return response.data;
+};
