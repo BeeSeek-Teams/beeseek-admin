@@ -18,6 +18,14 @@ export enum JobStep {
   HOME_SAFE = 'HOME_SAFE',
 }
 
+export const isErrandDetails = (details?: string) =>
+  typeof details === 'string' &&
+  details.includes('[ERRAND_META]') &&
+  details.includes('[/ERRAND_META]');
+
+export const getJobFlowLabel = (details?: string) =>
+  isErrandDetails(details) ? 'ERRAND' : 'JOB';
+
 export interface Job {
   id: string;
   contractId: string;

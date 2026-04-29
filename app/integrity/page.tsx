@@ -18,7 +18,7 @@ import { AdminConsentModal } from "@/components/AdminConsentModal";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getFlaggedReviews, toggleReviewFlag, Review, getFraudLogs, FraudLog } from "@/lib/reviews";
-import { getAdminInfractions, getAgentInfractionCount, Job } from "@/lib/jobs";
+import { getAdminInfractions, getAgentInfractionCount, Job, getJobFlowLabel } from "@/lib/jobs";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -282,6 +282,9 @@ export default function IntegrityPage() {
                               <Eye size={10} weight="bold" />
                               {job.id.slice(0, 8)}
                             </Link>
+                            <AdminBadge variant="secondary">
+                              {getJobFlowLabel(job.contract?.details)}
+                            </AdminBadge>
                             <span className="text-black/10">•</span>
                             <p className="text-[10px] text-black/30">{job.contract.client.firstName} {job.contract.client.lastName}</p>
                           </div>

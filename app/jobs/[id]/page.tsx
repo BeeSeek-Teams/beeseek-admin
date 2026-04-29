@@ -21,7 +21,7 @@ import { useRouter, useParams } from "next/navigation";
 import { AdminHeader } from "@/components/AdminHeader";
 import { AdminBadge } from "@/components/AdminBadge";
 import { toast } from "sonner";
-import { getJob, Job, JobStatus, JobStep } from "@/lib/jobs";
+import { getJob, Job, JobStatus, JobStep, getJobFlowLabel, isErrandDetails } from "@/lib/jobs";
 import { format } from "date-fns";
 
 export default function JobDetailPage() {
@@ -55,15 +55,16 @@ export default function JobDetailPage() {
     }).format(amount / 100);
   };
 
+  const isErrand = isErrandDetails(job?.contract?.details);
   const forensics = [
     { label: "Payment Held", date: job?.paidAt, step: JobStep.ALL_SET },
     { label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
     { label: "On the Way", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
     { label: "Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
-    { label: "Work Started", date: job?.startedAt, step: JobStep.STARTED },
-    { label: "Work Done", date: job?.finishedAt, step: JobStep.FINISHED },
-    { label: "Job Completed", date: job?.completedAt, step: JobStep.HOME_SAFE },
-    { label: "Home Safe", date: job?.homeSafeAt, step: JobStep.HOME_SAFE },
+    { label: isErrand ? "Errand Started" : "Work Started", date: job?.startedAt, step: JobStep.STARTED },
+    { label: isErrand ? "Errand Done" : "Work Done", date: job?.finishedAt, step: JobStep.FINISHED },
+    { label: "Payment Released", date: job?.completedAt, step: JobStep.FINISHED },
+    ...(!isErrand ? [{ label: "Home Safe", date: job?.homeSafeAt, step: JobStep.HOME_SAFE }] : []),
   ];
 
   if (loading) {
@@ -132,6 +133,7 @@ export default function JobDetailPage() {
                 <div>
                   <p className="text-sm font-bold text-primary">{job.contract.details}</p>
                   <div className="flex items-center gap-2 mt-1">
+                    <AdminBadge variant="secondary">{getJobFlowLabel(job.contract?.details)}</AdminBadge>
                     <CalendarBlank size={12} weight="bold" className="text-black/20" />
                     <p className="text-[10px] font-bold text-black/25">{format(new Date(job.contract.workDate), "EEEE, MMM dd, yyyy")}</p>
                     <span className="text-black/10">·</span>
@@ -157,7 +159,7 @@ export default function JobDetailPage() {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-bold text-black/40">Arrival Code</p>
+                <p className="text-xs font-bold text-black/40">{isErrand ? 'Delivery Code' : 'Arrival Code'}</p>
                 <div className="p-3 bg-primary rounded-xl">
                   <p className="text-lg font-black text-white tracking-[0.4em] font-mono text-center">{job.arrivalCode}</p>
                 </div>

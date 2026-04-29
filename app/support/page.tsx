@@ -191,6 +191,11 @@ export default function SupportPage() {
                   <p className="text-sm font-bold group-hover:text-primary transition-colors line-clamp-2">
                     {ticket.subject}
                   </p>
+                  {ticket.subject?.toLowerCase().includes('errand') && (
+                    <div className="mt-1">
+                      <AdminBadge variant="secondary">ERRAND</AdminBadge>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-md bg-black/[0.03] flex items-center justify-center text-[9px] font-bold text-primary">

@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import debounce from "lodash/debounce";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getJobs, updateJobStatus, adminCancelJob, Job, JobStatus, JobStep } from "@/lib/jobs";
+import { getJobs, updateJobStatus, adminCancelJob, Job, JobStatus, JobStep, getJobFlowLabel, isErrandDetails } from "@/lib/jobs";
 import { AdminConsentModal } from "@/components/AdminConsentModal";
 
 export default function JobsPage() {
@@ -146,7 +146,18 @@ export default function JobsPage() {
     }).format(amount / 100);
   };
 
-  const getStepProgress = (step: string) => {
+  const getStepProgress = (step: string, details?: string) => {
+    const isErrand = isErrandDetails(details);
+    if (isErrand) {
+      const errandSteps: Record<string, number> = {
+        [JobStep.FINISHED]: 100,
+        [JobStep.STARTED]: 75,
+        [JobStep.ARRIVED]: 50,
+        [JobStep.ON_THE_WAY]: 35,
+        [JobStep.MATERIALS_PURCHASED]: 20,
+      };
+      return errandSteps[step] || 10;
+    }
     const steps: Record<string, number> = {
       [JobStep.HOME_SAFE]: 100,
       [JobStep.FINISHED]: 85,
@@ -263,11 +274,13 @@ export default function JobsPage() {
                     </AdminTableCell>
                     <AdminTableCell>
                       <div className="space-y-1.5">
-                        <p className="text-[10px] font-bold text-black/25 uppercase">{job.currentStep.replace(/_/g, ' ')}</p>
+                          <p className="text-[10px] font-bold text-black/25 uppercase">
+                            {getJobFlowLabel(job.contract?.details)} · {job.currentStep.replace(/_/g, ' ')}
+                          </p>
                         <div className="w-20 h-1 bg-black/[0.04] rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-primary rounded-full transition-all duration-500" 
-                            style={{ width: `${getStepProgress(job.currentStep)}%` }} 
+                              style={{ width: `${getStepProgress(job.currentStep, job.contract?.details)}%` }} 
                           />
                         </div>
                       </div>
