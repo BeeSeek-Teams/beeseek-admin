@@ -112,6 +112,11 @@ export const unsuspendUser = async (userId: string) => {
   return response.data;
 };
 
+export const deleteUser = async (userId: string) => {
+  const response = await api.delete(`/users/${userId}`);
+  return response.data;
+};
+
 export const sendNinReminder = async (userId: string) => {
   const response = await api.post(`/users/${userId}/remind-nin`);
   return response.data;

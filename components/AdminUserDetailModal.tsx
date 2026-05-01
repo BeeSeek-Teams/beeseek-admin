@@ -24,7 +24,7 @@ import {
 } from "@phosphor-icons/react";
 import { AdminBadge } from "./AdminBadge";
 import { AdminConsentModal } from "./AdminConsentModal";
-import { User, suspendUser, unsuspendUser } from "@/lib/users";
+import { User, deleteUser, suspendUser, unsuspendUser } from "@/lib/users";
 import { deleteBee } from "@/lib/bees";
 import { format, formatDistanceToNow } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,6 +59,7 @@ const formatKobo = (kobo: number | undefined) => {
 export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user, isOpen, onClose, onUpdate }) => {
   const [loading, setLoading] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<string | null>(null);
+  const [deleteUserModal, setDeleteUserModal] = useState(false);
 
   // Suspension state
   const [showSuspendForm, setShowSuspendForm] = useState(false);
@@ -121,6 +122,24 @@ export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user
     } finally {
       setLoading(null);
       setDeleteModal(null);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      setLoading("deleting-user");
+      await deleteUser(user.id);
+      toast.success(`${user.firstName} has been deactivated`);
+      setDeleteUserModal(false);
+      onUpdate?.();
+      onClose();
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        "Failed to delete user";
+      toast.error(Array.isArray(message) ? message.join(", ") : message);
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -474,24 +493,38 @@ export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user
 
               {/* Footer Actions */}
               <div className="p-4 md:p-6 border-t border-black/5 bg-[#FAFAFA]">
-                {isSuspended ? (
+                <div className="flex gap-2">
+                  {isSuspended ? (
+                    <button
+                      onClick={() => setUnsuspendModal(true)}
+                      disabled={loading === "unsuspending"}
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {loading === "unsuspending" ? <SpinnerGap size={16} weight="bold" className="animate-spin" /> : <CheckCircle size={16} weight="bold" />}
+                      Lift Suspension
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowSuspendForm(!showSuspendForm)}
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ShieldWarning size={16} weight="bold" />
+                      {showSuspendForm ? "Hide Suspension Form" : "Suspend User"}
+                    </button>
+                  )}
                   <button
-                    onClick={() => setUnsuspendModal(true)}
-                    disabled={loading === "unsuspending"}
-                    className="w-full px-4 py-2.5 rounded-xl bg-green-600 text-white text-xs font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    onClick={() => setDeleteUserModal(true)}
+                    disabled={loading === "deleting-user"}
+                    className="px-4 py-2.5 rounded-xl bg-black text-white text-xs font-bold hover:bg-black/85 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {loading === "unsuspending" ? <SpinnerGap size={16} weight="bold" className="animate-spin" /> : <CheckCircle size={16} weight="bold" />}
-                    Lift Suspension
+                    {loading === "deleting-user" ? (
+                      <SpinnerGap size={16} weight="bold" className="animate-spin" />
+                    ) : (
+                      <Trash size={16} weight="bold" />
+                    )}
+                    Delete User
                   </button>
-                ) : (
-                  <button
-                    onClick={() => setShowSuspendForm(!showSuspendForm)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ShieldWarning size={16} weight="bold" />
-                    {showSuspendForm ? "Hide Suspension Form" : "Suspend User"}
-                  </button>
-                )}
+                </div>
               </div>
             </motion.div>
           </div>
@@ -520,6 +553,17 @@ export const AdminUserDetailModal: React.FC<AdminUserDetailModalProps> = ({ user
         confirmLabel="Delete"
         variant="danger"
         loading={loading?.startsWith("bee-") || false}
+      />
+
+      <AdminConsentModal
+        isOpen={deleteUserModal}
+        onClose={() => setDeleteUserModal(false)}
+        onConfirm={handleDeleteUser}
+        title="Delete this user?"
+        description="This will deactivate the user account from admin. User must have no active contracts/errands and zero wallet/escrow balance."
+        confirmLabel="Delete User"
+        variant="danger"
+        loading={loading === "deleting-user"}
       />
     </>
   );
