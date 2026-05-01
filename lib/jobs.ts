@@ -23,6 +23,22 @@ export const isErrandDetails = (details?: string) =>
   details.includes('[ERRAND_META]') &&
   details.includes('[/ERRAND_META]');
 
+export const stripErrandMeta = (details?: string) =>
+  typeof details === 'string'
+    ? details.replace(/\[ERRAND_META\][\s\S]*?\[\/ERRAND_META\]\n?/g, '').trim()
+    : '';
+
+export const parseErrandMeta = (details?: string): any | null => {
+  if (!isErrandDetails(details)) return null;
+  const match = details?.match(/\[ERRAND_META\]([\s\S]*?)\[\/ERRAND_META\]/);
+  if (!match?.[1]) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch {
+    return null;
+  }
+};
+
 export const getJobFlowLabel = (details?: string) =>
   isErrandDetails(details) ? 'ERRAND' : 'JOB';
 

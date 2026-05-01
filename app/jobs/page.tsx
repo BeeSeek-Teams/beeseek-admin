@@ -24,7 +24,7 @@ import { format } from "date-fns";
 import debounce from "lodash/debounce";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getJobs, updateJobStatus, adminCancelJob, Job, JobStatus, JobStep, getJobFlowLabel, isErrandDetails } from "@/lib/jobs";
+import { getJobs, updateJobStatus, adminCancelJob, Job, JobStatus, JobStep, getJobFlowLabel, isErrandDetails, stripErrandMeta } from "@/lib/jobs";
 import { AdminConsentModal } from "@/components/AdminConsentModal";
 
 export default function JobsPage() {
@@ -251,7 +251,9 @@ export default function JobsPage() {
                   <AdminTableRow key={job.id} onClick={() => router.push(`/jobs/${job.id}`)}>
                     <AdminTableCell className="min-w-[260px]">
                       <div className="space-y-1">
-                        <p className="text-xs font-bold text-primary line-clamp-1">{job.contract.details}</p>
+                        <p className="text-xs font-bold text-primary line-clamp-1">
+                          {stripErrandMeta(job.contract.details) || "Service details"}
+                        </p>
                         <div className="flex items-center gap-1.5">
                           <p className="text-[10px] font-mono text-black/25">{job.id.slice(0, 13)}…</p>
                           <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(job.id); toast.success("Copied"); }} className="text-black/20 hover:text-primary transition-colors">
@@ -324,7 +326,10 @@ export default function JobsPage() {
                             onClick={() => {
                               setCancelReason("");
                               setCancelAsInfraction(job.status === JobStatus.ESCALATED);
-                              setCancelModal({ jobId: job.id, details: job.contract.details });
+                              setCancelModal({
+                                jobId: job.id,
+                                details: stripErrandMeta(job.contract.details) || "Service details",
+                              });
                             }}
                             disabled={processingId === job.id}
                             className="p-2 hover:bg-red-50 rounded-lg text-black/25 hover:text-red-600 transition-colors disabled:opacity-50"

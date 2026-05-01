@@ -12,7 +12,6 @@ import {
   XCircle,
   WarningCircle,
   Phone,
-  CurrencyDollar,
   Package,
   Wrench,
   Copy,
@@ -21,7 +20,7 @@ import { useRouter, useParams } from "next/navigation";
 import { AdminHeader } from "@/components/AdminHeader";
 import { AdminBadge } from "@/components/AdminBadge";
 import { toast } from "sonner";
-import { getJob, Job, JobStatus, JobStep, getJobFlowLabel, isErrandDetails } from "@/lib/jobs";
+import { getJob, Job, JobStatus, JobStep, getJobFlowLabel, isErrandDetails, parseErrandMeta, stripErrandMeta } from "@/lib/jobs";
 import { format } from "date-fns";
 
 export default function JobDetailPage() {
@@ -56,16 +55,44 @@ export default function JobDetailPage() {
   };
 
   const isErrand = isErrandDetails(job?.contract?.details);
-  const forensics = [
-    { label: "Payment Held", date: job?.paidAt, step: JobStep.ALL_SET },
-    { label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
-    { label: "On the Way", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
-    { label: "Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
-    { label: isErrand ? "Errand Started" : "Work Started", date: job?.startedAt, step: JobStep.STARTED },
-    { label: isErrand ? "Errand Done" : "Work Done", date: job?.finishedAt, step: JobStep.FINISHED },
-    { label: "Payment Released", date: job?.completedAt, step: JobStep.FINISHED },
-    ...(!isErrand ? [{ label: "Home Safe", date: job?.homeSafeAt, step: JobStep.HOME_SAFE }] : []),
-  ];
+  const errandMeta = parseErrandMeta(job?.contract?.details);
+  const forensics = (() => {
+    if (!isErrand) {
+      return [
+        { label: "Payment Held", date: job?.paidAt, step: JobStep.ALL_SET },
+        { label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
+        { label: "On the Way", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
+        { label: "Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
+        { label: "Work Started", date: job?.startedAt, step: JobStep.STARTED },
+        { label: "Work Done", date: job?.finishedAt, step: JobStep.FINISHED },
+        { label: "Payment Released", date: job?.completedAt, step: JobStep.FINISHED },
+        { label: "Home Safe", date: job?.homeSafeAt, step: JobStep.HOME_SAFE },
+      ];
+    }
+
+    const base: Array<{ label: string; date: string | null | undefined; step: JobStep }> = [
+      { label: "Payment Held", date: job?.paidAt, step: JobStep.ALL_SET },
+      { label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
+      { label: "On the Way", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
+      { label: "Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
+      { label: "Errand Started", date: job?.startedAt, step: JobStep.STARTED },
+    ];
+
+    if (errandMeta?.kind === "POINT_TO_POINT" && Array.isArray(errandMeta?.stops)) {
+      errandMeta.stops.forEach((stop: any, idx: number) => {
+        base.push({
+          label: `${stop?.label || `Point ${String.fromCharCode(65 + idx)}`} Done`,
+          date: null,
+          step: JobStep.FINISHED,
+        });
+      });
+    } else {
+      base.push({ label: "Errand Done", date: job?.finishedAt, step: JobStep.FINISHED });
+    }
+
+    base.push({ label: "Payment Released", date: job?.completedAt, step: JobStep.FINISHED });
+    return base;
+  })();
 
   if (loading) {
     return (
@@ -131,7 +158,9 @@ export default function JobDetailPage() {
                   <Package size={24} weight="duotone" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-primary">{job.contract.details}</p>
+                  <p className="text-sm font-bold text-primary">
+                    {stripErrandMeta(job.contract.details) || "Service details"}
+                  </p>
                   <div className="flex items-center gap-2 mt-1">
                     <AdminBadge variant="secondary">{getJobFlowLabel(job.contract?.details)}</AdminBadge>
                     <CalendarBlank size={12} weight="bold" className="text-black/20" />
@@ -289,7 +318,7 @@ export default function JobDetailPage() {
           {/* Financials */}
           <div className="bg-white border border-black/5 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
-              <CurrencyDollar size={16} weight="duotone" className="text-primary" />
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-black text-primary">₦</span>
               <p className="text-sm font-black text-primary">Payment Breakdown</p>
             </div>
              
