@@ -57,10 +57,12 @@ export default function JobDetailPage() {
   const isErrand = isErrandDetails(job?.contract?.details);
   const errandMeta = parseErrandMeta(job?.contract?.details);
   const forensics = (() => {
+    const hasMaterials = (job?.contract?.materials?.length || 0) > 0 || !!job?.materialsPurchasedAt;
+
     if (!isErrand) {
       return [
         { label: "Payment Held", date: job?.paidAt, step: JobStep.ALL_SET },
-        { label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
+        ...(hasMaterials ? [{ label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED }] : []),
         { label: "On the Way", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
         { label: "Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
         { label: "Work Started", date: job?.startedAt, step: JobStep.STARTED },
@@ -70,26 +72,32 @@ export default function JobDetailPage() {
       ];
     }
 
-    const base: Array<{ label: string; date: string | null | undefined; step: JobStep }> = [
+    const base: Array<{ label: string; date: string | null | undefined; step: JobStep; completed?: boolean }> = [
       { label: "Payment Held", date: job?.paidAt, step: JobStep.ALL_SET },
-      { label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED },
-      { label: "On the Way", date: job?.onTheWayAt, step: JobStep.ON_THE_WAY },
-      { label: "Arrived", date: job?.arrivedAt, step: JobStep.ARRIVED },
+      ...(hasMaterials ? [{ label: "Materials Bought", date: job?.materialsPurchasedAt, step: JobStep.MATERIALS_PURCHASED }] : []),
       { label: "Errand Started", date: job?.startedAt, step: JobStep.STARTED },
     ];
 
     if (errandMeta?.kind === "POINT_TO_POINT" && Array.isArray(errandMeta?.stops)) {
+      const completedIndexes = Array.isArray(errandMeta?.completedPointIndexes)
+        ? errandMeta.completedPointIndexes
+        : [];
+      const errandFinished = !!job?.finishedAt || !!job?.completedAt;
       errandMeta.stops.forEach((stop: any, idx: number) => {
         base.push({
           label: `${stop?.label || `Point ${String.fromCharCode(65 + idx)}`} Done`,
           date: null,
           step: JobStep.FINISHED,
+          completed: errandFinished || completedIndexes.includes(idx),
         });
       });
-    } else {
-      base.push({ label: "Errand Done", date: job?.finishedAt, step: JobStep.FINISHED });
     }
 
+    if (errandMeta?.kind !== "POINT_TO_POINT") {
+      base.push({ label: "I am Here", date: job?.arrivedAt, step: JobStep.ARRIVED });
+    }
+
+    base.push({ label: "Errand Done", date: job?.finishedAt, step: JobStep.FINISHED });
     base.push({ label: "Payment Released", date: job?.completedAt, step: JobStep.FINISHED });
     return base;
   })();
@@ -205,7 +213,7 @@ export default function JobDetailPage() {
              
             <div className="space-y-0">
               {forensics.map((point, i) => {
-                const isCompleted = !!point.date;
+                const isCompleted = point.completed ?? !!point.date;
                 return (
                   <div key={i} className="flex gap-4 pb-6 last:pb-0 relative">
                     {i !== forensics.length - 1 && (
