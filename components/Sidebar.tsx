@@ -14,6 +14,7 @@ import {
   Fingerprint,
   Briefcase,
   ChartPie,
+  MapPin,
   CurrencyNgn,
   TrendUp,
   Ticket,
@@ -41,6 +42,12 @@ const menuItems = [
     icon: ClipboardText, 
     label: "Jobs", 
     href: "/jobs",
+    roles: ["MODERATOR", "ADMIN", "SUPER_ADMIN"]
+  },
+  {
+    icon: MapPin,
+    label: "Errand Push",
+    href: "/errands-metrics",
     roles: ["MODERATOR", "ADMIN", "SUPER_ADMIN"]
   },
   { 
